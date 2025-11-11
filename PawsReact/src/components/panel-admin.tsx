@@ -56,20 +56,21 @@ export default function PanelAdmin() {
   };
 
   const cargarUsuarios = async () => {
-    setLoadingUsers(true); setErrUsers(null);
-    try {
-      const data = await adminListUsuarios();
-      // Solo paseadores aprobados (status true) y todos los dueños (independiente del status)
-      const filtered = (data.items || []).filter(
-        u => (u.rol === "PASEADOR" && u.status === true) || u.rol === "DUEÑO"
-      );
-      setUsers(filtered);
-    } catch (e: any) {
-      setErrUsers(e?.response?.data?.error || e?.message || "No se pudo cargar usuarios");
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
+  setLoadingUsers(true); setErrUsers(null);
+  try {
+    const data = await adminListUsuarios();
+    // Mostrar TODOS los paseadores (habilitados y deshabilitados) y todos los dueños
+    const filtered = (data.items || []).filter(
+      u => u.rol === "PASEADOR" || u.rol === "DUEÑO"
+    );
+    setUsers(filtered);
+  } catch (e: any) {
+    setErrUsers(e?.response?.data?.error || e?.message || "No se pudo cargar usuarios");
+  } finally {
+    setLoadingUsers(false);
+  }
+};
+
 
   useEffect(() => { void cargarPendientes(); void cargarUsuarios(); }, []);
 
@@ -148,26 +149,53 @@ const prettyRol = useMemo(() => {
     );
   };
 
+
+  
   const rechazar = (r: AdminPaseadorPendiente) => {
-    handleOpenModal(
-      "Denegar solicitud",
-      `¿Denegar a ${r.nombre} ${r.apellido}?`,
-      "Denegar",
-      "bg-red-500",
-      async () => {
-        try {
-          setWorkingId(r.idUsuario);
-          await adminRechazarPaseador(r.idUsuario, { revertToDueno: false });
-          await Promise.all([cargarPendientes(), cargarUsuarios()]);
-        } catch (e: any) {
-          alert(e?.response?.data?.error || e?.message || "No se pudo denegar");
-        } finally {
-          setWorkingId(null);
-          setModalOpen(false);
-        }
+  handleOpenModal(
+    "Denegar solicitud",
+    `¿Denegar a ${r.nombre} ${r.apellido}?`,
+    "Denegar",
+    "bg-red-500",
+    async () => {
+      // --- OPTIMISTA: quita de pendientes y agrega a usuarios como deshabilitado ---
+      setRows(prev => prev.filter(p => p.idUsuario !== r.idUsuario));
+
+      setUsers(prev => {
+        const existe = prev.some(u => u.idUsuario === r.idUsuario);
+        const nuevo: AdminUsuario = {
+          idUsuario: r.idUsuario,
+          nombre: r.nombre,
+          apellido: r.apellido,
+          correo: r.correo,
+          telefono: r.telefono ?? null,
+          rol: "PASEADOR",
+          status: false,                // ← deshabilitado
+          carnetIdentidad: r.carnetIdentidad ?? null,
+          antecedentes: r.antecedentes ?? null,
+        };
+        return existe
+          ? prev.map(u => u.idUsuario === r.idUsuario ? { ...u, ...nuevo } : u)
+          : [nuevo, ...prev];
+      });
+
+      try {
+        setWorkingId(r.idUsuario);
+        await adminRechazarPaseador(r.idUsuario, { revertToDueno: false });
+        // Revalidar ambas tablas para quedar consistentes con el back
+        await Promise.all([cargarPendientes(), cargarUsuarios()]);
+      } catch (e: any) {
+        // Rollback simple: recargar ambas tablas
+        await Promise.all([cargarPendientes(), cargarUsuarios()]);
+        alert(e?.response?.data?.error || e?.message || "No se pudo denegar");
+      } finally {
+        setWorkingId(null);
+        setModalOpen(false);
       }
-    );
-  };
+    }
+  );
+};
+
 
   // ================== Acciones Usuarios (toggle status) ==================
   const toggleStatus = async (u: AdminUsuario) => {
