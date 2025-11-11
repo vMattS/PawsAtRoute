@@ -129,7 +129,7 @@ const Login: React.FC = () => {
     (e: any) => setRemember(e.detail.checked),
     []
   );
-
+  
   const validarFormulario = useCallback(() => {
     const correoError = validateEmail(correo);
     const passwordError = validatePassword(password);
@@ -143,39 +143,40 @@ const Login: React.FC = () => {
   }, [correo, password]);
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setLoginError(null);
+  async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
 
-      if (!validarFormulario()) return;
+    if (!validarFormulario()) return;
 
-      setLoading(true);
-      try {
-        const data = await apiLogin(correo, password, remember);
-        Auth.login(data.token, data.user);
+    setLoading(true);
+    try {
+      const data = await apiLogin(correo, password /* sin remember */);
 
-        let path = "/";
-        switch (data.user.rol) {
-          case "PASEADOR":
-            path = "/panel-paseador/inicio";
-            break;
-          case "DUEÑO":
-            path = "/tabs/tab1";
-            break;
-        }
-        router.push(path, "root");
-      } catch (err: any) {
-        setLoginError(
-          err?.response?.data?.error ||
-            err?.message ||
-            "Error al iniciar sesión"
-        );
-      } finally {
-        setLoading(false);
+      // Persistir SIEMPRE en localStorage
+      Auth.login(data.token, data.user);
+      if (data.user.rol) Auth.setRole(data.user.rol);
+
+      let path = "/";
+      switch (data.user.rol) {
+        case "PASEADOR":
+          path = "/panel-paseador/inicio";
+          break;
+        case "DUEÑO":
+          path = "/tabs/tab1";
+          break;
       }
-    },
-    [correo, password, remember, router, validarFormulario]
-  );
+      router.push(path, "root");
+    } catch (err: any) {
+      setLoginError(
+        err?.response?.data?.error || err?.message || "Error al iniciar sesión"
+      );
+    } finally {
+      setLoading(false);
+    }
+  },
+  [correo, password, router, validarFormulario]
+);
 
   const goToRecuperar = useCallback(() => {
     router.push("/recuperar-clave", "forward");
@@ -243,15 +244,6 @@ const Login: React.FC = () => {
                   <p className="ion-padding-start">{errors.password}</p>
                 </IonText>
               )}
-
-              <IonItem className="ion-margin-top">
-                <IonCheckbox
-                  slot="start"
-                  checked={remember}
-                  onIonChange={handleRememberChange}
-                />
-                <IonLabel>Recordarme</IonLabel>
-              </IonItem>
 
               {loginError && (
                 <IonText color="danger">

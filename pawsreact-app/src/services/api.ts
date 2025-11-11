@@ -17,6 +17,7 @@ let accessToken: string | null = localStorage.getItem("access_token") || null;
 let token: string | null = localStorage.getItem("access_token");
 /** ——— Interceptor de REQUEST: adjunta Bearer ——— */
 api.interceptors.request.use((config) => {
+  if (!accessToken) accessToken = localStorage.getItem("access_token");
   if (accessToken && config.headers) {
     config.headers["Authorization"] = `Bearer ${accessToken}`;
   }
@@ -50,6 +51,9 @@ api.interceptors.response.use(
         console.error("No se pudo refrescar el token:", refreshError);
         accessToken = null;
         localStorage.removeItem("access_token");
+        localStorage.removeItem("usuario");     // ← añade
+        localStorage.removeItem("role");        // ← añade
+        localStorage.removeItem("isLoggedIn");
         // Importante: NO navegues aquí con window.location si usas Router
         // deja que la UI maneje la redirección cuando detecte no login.
       }
@@ -138,20 +142,22 @@ export const login = async (
   password: string,
   remember = false
 ): Promise<LoginResponse> => {
-  const res = await api.post<LoginResponse>("/auth/login", {
-    email: correo,
-    password,
-    remember,
-  });
-  
+  const res = await api.post<LoginResponse>(
+    "/auth/login",
+    { email: correo, password, remember },
+    { withCredentials: false } // ← MUY IMPORTANTE (cookie RT)
+  );
+
+  // Acceso en memoria + persistido para el interceptor
   accessToken = res.data.token;
-  const user = res.data.user; 
-  localStorage.setItem("usuario", JSON.stringify(user)); 
   if (accessToken) localStorage.setItem("access_token", accessToken);
-  console.log(accessToken);
-  console.log(user);
+
+  // (opcional) si quieres mantener "usuario" suelto además de Auth
+  localStorage.setItem("usuario", JSON.stringify(res.data.user));
+
   return res.data;
 };
+
 
 export const logout = async (): Promise<void> => {
   try {
@@ -162,6 +168,9 @@ export const logout = async (): Promise<void> => {
   } finally {
     accessToken = null;
     localStorage.removeItem("access_token");
+    localStorage.removeItem("usuario");       
+    localStorage.removeItem("role");          
+    localStorage.removeItem("isLoggedIn");    
     console.log(accessToken);
   }
 };

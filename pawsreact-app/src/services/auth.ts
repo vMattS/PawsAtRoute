@@ -15,63 +15,44 @@ const KEYS = {
   role: "role",
 } as const;
 
-// Helpers internos: leer de sessionStorage primero y luego localStorage
-const getFromBoth = (key: string): string | null =>
-  sessionStorage.getItem(key) ?? localStorage.getItem(key);
-
-const removeFromBoth = (key: string) => {
-  sessionStorage.removeItem(key);
-  localStorage.removeItem(key);
-};
+// Lee SIEMPRE de localStorage
+const get = (key: string): string | null => localStorage.getItem(key);
+const remove = (key: string) => localStorage.removeItem(key);
 
 export const Auth = {
-  /** ¿está logueado? (lee ambos) */
-  isLoggedIn: (): boolean => getFromBoth(KEYS.logged) === "true",
+  isLoggedIn: (): boolean => get(KEYS.logged) === "true",
 
-  /**
-   * Guardar sesión
-   * - remember = true  -> localStorage
-   * - remember = false -> sessionStorage (se borra al cerrar la pestaña)
-   */
-  login: (token: string, user: Usuario, remember: boolean = false) => {
-    const store = remember ? localStorage : sessionStorage;
+  // SIEMPRE a localStorage (sin recordarme)
+  login: (token: string, user: Usuario) => {
+    // limpia por si hay restos
+    remove(KEYS.logged);
+    remove(KEYS.token);
+    remove(KEYS.userId);
+    remove(KEYS.user);
+    remove(KEYS.role);
 
-    // Limpia claves previas en ambos para evitar inconsistencias
-    removeFromBoth(KEYS.logged);
-    removeFromBoth(KEYS.token);
-    removeFromBoth(KEYS.userId);
-    removeFromBoth(KEYS.user);
-    removeFromBoth(KEYS.role);
-
-    store.setItem(KEYS.logged, "true");
-    store.setItem(KEYS.token, token);
-    store.setItem(KEYS.userId, String(user.idUsuario ?? ""));
-    store.setItem(KEYS.user, JSON.stringify(user));
-    if (user.rol) store.setItem(KEYS.role, user.rol);
+    localStorage.setItem(KEYS.logged, "true");
+    localStorage.setItem(KEYS.token, token);
+    localStorage.setItem(KEYS.userId, String(user.idUsuario ?? ""));
+    localStorage.setItem(KEYS.user, JSON.stringify(user));
+    if (user.rol) localStorage.setItem(KEYS.role, user.rol);
   },
 
-  /** opcional: setear/actualizar rol explícitamente (persiste donde esté la sesión) */
-  setRole: (rol: string) => {
-    const prefersSession = sessionStorage.getItem(KEYS.logged) === "true";
-    const store = prefersSession ? sessionStorage : localStorage;
-    store.setItem(KEYS.role, rol);
-  },
+  setRole: (rol: string) => localStorage.setItem(KEYS.role, rol),
 
-  /** getters (leen ambos) */
-  getToken: (): string | null => getFromBoth(KEYS.token),
-  getUserId: (): string | null => getFromBoth(KEYS.userId),
+  getToken: (): string | null => get(KEYS.token),
+  getUserId: (): string | null => get(KEYS.userId),
   getUser: (): Usuario | null => {
-    const raw = getFromBoth(KEYS.user);
+    const raw = get(KEYS.user);
     try { return raw ? (JSON.parse(raw) as Usuario) : null; } catch { return null; }
   },
-  getRole: (): string => getFromBoth(KEYS.role) ?? (Auth.getUser()?.rol ?? ""),
+  getRole: (): string => get(KEYS.role) ?? (Auth.getUser()?.rol ?? ""),
 
-  /** logout: borra en ambos para garantizar limpieza */
   logout: () => {
-    removeFromBoth(KEYS.logged);
-    removeFromBoth(KEYS.token);
-    removeFromBoth(KEYS.userId);
-    removeFromBoth(KEYS.user);
-    removeFromBoth(KEYS.role);
+    remove(KEYS.logged);
+    remove(KEYS.token);
+    remove(KEYS.userId);
+    remove(KEYS.user);
+    remove(KEYS.role);
   },
 };
