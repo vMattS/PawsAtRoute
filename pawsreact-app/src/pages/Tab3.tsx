@@ -1,45 +1,53 @@
-
 import { useEffect, useState } from "react";
-import { logout as apiLogout } from "../services/api";
-import { Auth, type Usuario } from "../services/auth";
+import { useIonRouter } from "@ionic/react";
 import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
   IonAvatar,
-  IonBadge,
+  IonText,
   IonButton,
   IonCard,
   IonCardContent,
-  IonCardHeader,
-  IonCardSubtitle,
-  IonCardTitle,
-  IonContent,
-  IonHeader,
+  IonList,
   IonItem,
-  IonPage,
-  IonText,
-  IonTitle,
-  IonToolbar,
+  IonIcon,
+  IonLabel,
+  IonChip,
+  IonSpinner,
+  IonGrid,
+  IonRow,
+  IonCol,
 } from "@ionic/react";
-import "./Tab3.css";
-import { useIonRouter } from "@ionic/react";
+import {
+  personCircleOutline,
+  mailOutline,
+  callOutline,
+  locationOutline,
+  logOutOutline,
+  createOutline,
+  ribbonOutline,
+} from "ionicons/icons";
+import { logout as apiLogout } from "../services/api";
+import { Auth, type Usuario } from "../services/auth";
 
 const Tab3: React.FC = () => {
   const router = useIonRouter();
 
-  // 👉 estado con los datos del usuario
   const [user, setUser] = useState<Usuario | null>(null);
   const [role, setRole] = useState<string>("");
   const [signingOut, setSigningOut] = useState(false);
 
-  // 👉 al montar, toma los datos del localStorage (vía Auth)
   useEffect(() => {
     const u = Auth.getUser();
     if (!u) {
-      // si no hay sesión, manda al login y corta
       router.push("/login", "root");
       return;
     }
     setUser(u);
-    setRole(Auth.getRole()); // sin normalizar, tal como viene del backend
+    setRole(Auth.getRole());
   }, [router]);
 
   const handleLogout = async () => {
@@ -58,7 +66,7 @@ const Tab3: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar color="selective-yellow">
           <IonTitle className="coffeecake" color="prussian-blue">
             Paws At Route
@@ -87,77 +95,199 @@ const Tab3: React.FC = () => {
           </svg>
         </div>
       </IonHeader>
-         <IonContent className="ion-padding" fullscreen>
-        <IonText color="prussian-blue">
-          <h1 style={{ fontWeight: "bold" }}>Mi perfil</h1>
-        </IonText>
 
-        <IonText>
-          <p>Aquí puedes ver tu información, como tu nombre, correo y número de teléfono.</p>
-        </IonText>
-
-        <div className="profile-container ion-text-center">
-          <IonAvatar>
-            <img
-              style={{ border: "2px solid var(--ion-color-ut-orange)" }}
-              alt="Avatar"
-              src="https://ionicframework.com/docs/img/demos/avatar.svg"
-            />
+      <IonContent fullscreen className="ion-padding">
+        <div
+          className="ion-text-center ion-margin-bottom"
+          style={{ marginTop: "20px" }}
+        >
+          <IonAvatar
+            style={{
+              width: "100px",
+              height: "100px",
+              margin: "0 auto 15px auto",
+              border: "4px solid white",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                background: "#e0e0e0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <IonIcon
+                icon={personCircleOutline}
+                style={{ fontSize: "100px", color: "#9e9e9e" }}
+              />
+            </div>
           </IonAvatar>
 
           <IonText color="prussian-blue">
-            <h3>{user?.nombre} {user?.apellido ?? "Usuario"}</h3>
+            <h1
+              style={{
+                fontWeight: 800,
+                margin: "0 0 5px 0",
+                fontSize: "1.8rem",
+              }}
+            >
+              {user?.nombre} {user?.apellido}
+            </h1>
           </IonText>
 
-          <IonBadge color="ut-orange">
-            <p>{role || user?.rol || "SIN ROL"}</p>
-          </IonBadge>
-        </div>
-
-        <IonCard>
-          <IonCardHeader className="ion-text-center">
-            <IonCardTitle color="prussian-blue">Mis datos</IonCardTitle>
-            <IonCardSubtitle>Información de contacto</IonCardSubtitle>
-          </IonCardHeader>
-
-          <IonCardContent>
-            <IonItem>
-              <IonText color="prussian-blue" className="ion-margin-end">
-                <h2 style={{ fontWeight: "bold" }}>Correo:</h2>
-              </IonText>
-              <IonText>{user?.correo ?? "-"}</IonText>
-            </IonItem>
-
-            <IonItem>
-              <IonText color="prussian-blue" className="ion-margin-end">
-                <h2 style={{ fontWeight: "bold" }}>Teléfono:</h2>
-              </IonText>
-              <IonText>{user?.telefono ?? "-"}</IonText>
-            </IonItem>
-
-            <IonItem>
-              <IonText color="prussian-blue" className="ion-margin-end">
-                <h2 style={{ fontWeight: "bold" }}>Comuna:</h2>
-              </IonText>
-              <IonText>{user?.comuna ?? "-"}</IonText>
-            </IonItem>
-          </IonCardContent>
-
-          <IonButton
-            onClick={() => router.push("/editar-perfil")}
-            fill="clear"
-            color="ut-orange"
-            style={{ textDecoration: "underline", fontWeight: "bold" }}
+          <IonChip
+            outline
+            color="primary"
+            style={{
+              marginTop: "5px",
+              borderColor: "var(--ion-color-selective-yellow)",
+              color: "var(--ion-color-prussian-blue)",
+            }}
           >
-            Editar perfil
-          </IonButton>
-        </IonCard>
-
-        <div className="ion-text-center">
-          <IonButton onClick={handleLogout} color="danger" disabled={signingOut}>
-            {signingOut ? "Cerrando sesión…" : "Cerrar sesión"}
-          </IonButton>
+            <IonIcon icon={ribbonOutline} color="warning" />
+            <IonLabel style={{ fontWeight: 700 }}>
+              {role || user?.rol || "USUARIO"}
+            </IonLabel>
+          </IonChip>
         </div>
+
+        <IonGrid>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="12" sizeMd="8" sizeLg="6">
+              <IonCard
+                style={{
+                  borderRadius: "20px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                  margin: 0,
+                }}
+              >
+                <IonCardContent className="ion-no-padding">
+                  <IonList lines="full">
+                    <IonItem
+                      style={{
+                        "--padding-start": "20px",
+                        "--inner-padding-end": "20px",
+                      }}
+                    >
+                      <IonIcon icon={mailOutline} slot="start" color="medium" />
+                      <IonLabel>
+                        <p
+                          style={{
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            color: "#999",
+                            marginBottom: "2px",
+                          }}
+                        >
+                          Correo Electrónico
+                        </p>
+                        <IonText color="dark" style={{ fontSize: "1rem" }}>
+                          {user?.correo || "No disponible"}
+                        </IonText>
+                      </IonLabel>
+                    </IonItem>
+
+                    <IonItem
+                      style={{
+                        "--padding-start": "20px",
+                        "--inner-padding-end": "20px",
+                      }}
+                    >
+                      <IonIcon icon={callOutline} slot="start" color="medium" />
+                      <IonLabel>
+                        <p
+                          style={{
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            color: "#999",
+                            marginBottom: "2px",
+                          }}
+                        >
+                          Teléfono
+                        </p>
+                        <IonText color="dark" style={{ fontSize: "1rem" }}>
+                          {user?.telefono || "No registrado"}
+                        </IonText>
+                      </IonLabel>
+                    </IonItem>
+
+                    <IonItem
+                      lines="none"
+                      style={{
+                        "--padding-start": "20px",
+                        "--inner-padding-end": "20px",
+                      }}
+                    >
+                      <IonIcon
+                        icon={locationOutline}
+                        slot="start"
+                        color="medium"
+                      />
+                      <IonLabel>
+                        <p
+                          style={{
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            color: "#999",
+                            marginBottom: "2px",
+                          }}
+                        >
+                          Comuna
+                        </p>
+                        <IonText color="dark" style={{ fontSize: "1rem" }}>
+                          {user?.comuna || "No registrada"}
+                        </IonText>
+                      </IonLabel>
+                    </IonItem>
+                  </IonList>
+                </IonCardContent>
+              </IonCard>
+
+              <div className="ion-padding-top ion-margin-top">
+                <IonButton
+                  expand="block"
+                  shape="round"
+                  color="prussian-blue"
+                  className="ion-margin-bottom"
+                  onClick={() => router.push("/editar-perfil")}
+                  style={{ height: "50px", fontSize: "1rem", fontWeight: 600 }}
+                >
+                  <IonIcon slot="start" icon={createOutline} />
+                  Editar Perfil
+                </IonButton>
+
+                <IonButton
+                  expand="block"
+                  fill="outline"
+                  shape="round"
+                  color="danger"
+                  onClick={handleLogout}
+                  disabled={signingOut}
+                  style={{
+                    height: "50px",
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    borderWidth: "2px",
+                  }}
+                >
+                  {signingOut ? (
+                    <IonSpinner name="crescent" />
+                  ) : (
+                    <>
+                      <IonIcon slot="start" icon={logOutOutline} />
+                      Cerrar Sesión
+                    </>
+                  )}
+                </IonButton>
+              </div>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
       </IonContent>
     </IonPage>
   );

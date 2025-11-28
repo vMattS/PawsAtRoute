@@ -1,4 +1,3 @@
-// src/pages/PanelPaseador.tsx
 import {
   IonPage,
   IonHeader,
@@ -6,7 +5,6 @@ import {
   IonTitle,
   IonContent,
   IonText,
-  IonBadge,
   IonButton,
   IonCard,
   IonCardContent,
@@ -16,11 +14,30 @@ import {
   IonItem,
   IonAlert,
   IonSpinner,
-  IonList,
   IonLabel,
+  IonSegment,
+  IonSegmentButton,
+  IonRefresher,
+  IonRefresherContent,
+  IonIcon,
+  IonChip,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonSkeletonText,
+  IonAvatar,
 } from "@ionic/react";
 import { useEffect, useMemo, useState } from "react";
 import { useIonRouter } from "@ionic/react";
+import {
+  calendarOutline,
+  timeOutline,
+  locationOutline,
+  hourglassOutline,
+  walkOutline,
+  paw,
+  refreshOutline,
+} from "ionicons/icons";
 import { Auth } from "../services/auth";
 import {
   listMisPaseosComoPaseador,
@@ -35,8 +52,8 @@ import { estadoLabel, estadoColor, type Estado } from "../utils/estadoPaseo";
 
 const PanelPaseador: React.FC = () => {
   const router = useIonRouter();
+  const [view, setView] = useState<"mis-paseos" | "disponibles">("mis-paseos");
 
-  // Guard: solo PASEADOR
   useEffect(() => {
     const u = Auth.getUser();
     if (!u) return router.push("/login", "root");
@@ -59,15 +76,14 @@ const PanelPaseador: React.FC = () => {
     message?: string;
   }>({ open: false });
 
-  const cargar = async () => {
-    setLoading(true);
+  const cargar = async (event?: CustomEvent) => {
+    if (!event) setLoading(true);
     try {
       const [a, b] = await Promise.all([
         listMisPaseosComoPaseador({ page: 1, pageSize: 50 }),
         listPaseosDisponibles({ page: 1, pageSize: 50 }),
       ]);
 
-      // 🔹 deja en "mis paseos" solo NO finalizados
       const activos = {
         ...a,
         items: (a.items || []).filter((p) => p.estado !== "FINALIZADO"),
@@ -87,6 +103,7 @@ const PanelPaseador: React.FC = () => {
       });
     } finally {
       setLoading(false);
+      if (event) (event.target as HTMLIonRefresherElement).complete();
     }
   };
 
@@ -101,9 +118,10 @@ const PanelPaseador: React.FC = () => {
       await cargar();
       setAlert({
         open: true,
-        header: "Listo",
-        message: "Paseo asignado a ti.",
+        header: "¡Éxito!",
+        message: "El paseo ha sido asignado a ti.",
       });
+      setView("mis-paseos");
     } catch (e: any) {
       setAlert({
         open: true,
@@ -121,11 +139,6 @@ const PanelPaseador: React.FC = () => {
       setWorkingId(idPaseo);
       await startPaseo(idPaseo);
       await cargar();
-      setAlert({
-        open: true,
-        header: "En curso",
-        message: "Comenzaste el paseo.",
-      });
     } catch (e: any) {
       setAlert({
         open: true,
@@ -147,8 +160,8 @@ const PanelPaseador: React.FC = () => {
       await cargar();
       setAlert({
         open: true,
-        header: "Finalizado",
-        message: "Paseo finalizado correctamente.",
+        header: "Gran trabajo",
+        message: "El paseo ha finalizado correctamente.",
       });
     } catch (e: any) {
       setAlert({
@@ -166,11 +179,13 @@ const PanelPaseador: React.FC = () => {
 
   const fmtFecha = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString();
+      const d = new Date(iso);
+      return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
     } catch {
       return iso;
     }
   };
+
   const fmtHora = (iso: string) => {
     try {
       return new Date(iso).toLocaleTimeString([], {
@@ -182,53 +197,296 @@ const PanelPaseador: React.FC = () => {
     }
   };
 
-  const renderAccionAsignado = (p: PaseoListItem) => {
-    // Botones según estado
-    if (p.estado === "PENDIENTE" || p.estado === "ACEPTADO") {
-      return (
-        <IonButton
-          color="success"
-          expand="block"
-          onClick={() => iniciar(p.idPaseo)}
-          disabled={workingId === p.idPaseo}
+  const renderSkeleton = () => (
+    <>
+      {[1, 2, 3].map((i) => (
+        <IonCard key={i} className="ion-margin-bottom">
+          <IonCardContent>
+            <IonSkeletonText
+              animated
+              style={{ width: "60%", height: "20px", marginBottom: "10px" }}
+            />
+            <IonSkeletonText
+              animated
+              style={{ width: "40%", height: "15px", marginBottom: "20px" }}
+            />
+            <IonSkeletonText
+              animated
+              style={{ width: "100%", height: "40px" }}
+            />
+          </IonCardContent>
+        </IonCard>
+      ))}
+    </>
+  );
+
+  const renderEmptyState = (msg: string) => (
+    <div
+      className="ion-text-center ion-padding"
+      style={{ marginTop: "40px", opacity: 0.6 }}
+    >
+      <div
+        style={{
+          background: "#f4f5f8",
+          borderRadius: "50%",
+          width: "80px",
+          height: "80px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "0 auto 20px auto",
+        }}
+      >
+        <IonIcon icon={walkOutline} style={{ fontSize: "40px" }} />
+      </div>
+      <IonText>
+        <h3>{msg}</h3>
+      </IonText>
+      <IonButton fill="clear" onClick={() => cargar()}>
+        <IonIcon slot="start" icon={refreshOutline} />
+        Recargar
+      </IonButton>
+    </div>
+  );
+
+  const renderCard = (p: PaseoListItem, type: "mio" | "disponible") => (
+    <IonCard
+      key={p.idPaseo}
+      className="ion-margin-bottom"
+      style={{ borderRadius: "16px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}
+    >
+      <IonCardHeader>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
         >
-          {workingId === p.idPaseo ? (
-            <IonSpinner name="dots" />
+          <div>
+            <IonCardSubtitle
+              color="primary"
+              style={{
+                fontWeight: 700,
+                fontSize: "0.8rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {p.duenio ? `${p.duenio.nombre} ${p.duenio.apellido}` : "Usuario"}
+            </IonCardSubtitle>
+            <IonCardTitle
+              style={{
+                fontSize: "1.4rem",
+                fontWeight: 800,
+                marginTop: "4px",
+                color: "var(--ion-color-prussian-blue)",
+              }}
+            >
+              {p.mascota?.nombre ?? "Mascota"}
+            </IonCardTitle>
+          </div>
+          <IonChip
+            color={estadoColor[p.estado as Estado]}
+            outline
+            style={{
+              margin: 0,
+              height: "24px",
+              fontSize: "0.7rem",
+              fontWeight: 700,
+            }}
+          >
+            {estadoLabel[p.estado as Estado]}
+          </IonChip>
+        </div>
+      </IonCardHeader>
+
+      <IonCardContent>
+        <IonGrid className="ion-no-padding">
+          <IonRow>
+            <IonCol size="6">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "8px",
+                  color: "#555",
+                }}
+              >
+                <IonIcon
+                  icon={calendarOutline}
+                  style={{
+                    marginRight: "8px",
+                    color: "var(--ion-color-selective-yellow)",
+                  }}
+                />
+                <IonLabel style={{ fontSize: "0.9rem" }}>
+                  {fmtFecha(p.fecha)}
+                </IonLabel>
+              </div>
+            </IonCol>
+            <IonCol size="6">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "8px",
+                  color: "#555",
+                }}
+              >
+                <IonIcon
+                  icon={timeOutline}
+                  style={{
+                    marginRight: "8px",
+                    color: "var(--ion-color-selective-yellow)",
+                  }}
+                />
+                <IonLabel style={{ fontSize: "0.9rem" }}>
+                  {fmtHora(p.hora)}
+                </IonLabel>
+              </div>
+            </IonCol>
+            <IonCol size="6">
+              <div
+                style={{ display: "flex", alignItems: "center", color: "#555" }}
+              >
+                <IonIcon
+                  icon={hourglassOutline}
+                  style={{
+                    marginRight: "8px",
+                    color: "var(--ion-color-selective-yellow)",
+                  }}
+                />
+                <IonLabel style={{ fontSize: "0.9rem" }}>
+                  {p.duracion} min
+                </IonLabel>
+              </div>
+            </IonCol>
+          </IonRow>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "start",
+              marginTop: "12px",
+              padding: "10px",
+              background: "#f8f9fa",
+              borderRadius: "8px",
+            }}
+          >
+            <IonIcon
+              icon={locationOutline}
+              style={{
+                minWidth: "20px",
+                marginTop: "2px",
+                marginRight: "8px",
+                color: "var(--ion-color-medium)",
+              }}
+            />
+            <IonText
+              color="dark"
+              style={{ fontSize: "0.9rem", lineHeight: "1.4" }}
+            >
+              {p.lugarEncuentro}
+            </IonText>
+          </div>
+        </IonGrid>
+
+        <div className="ion-margin-top">
+          {type === "mio" ? (
+            <>
+              {(p.estado === "PENDIENTE" || p.estado === "ACEPTADO") && (
+                <IonButton
+                  color="success"
+                  expand="block"
+                  shape="round"
+                  onClick={() => iniciar(p.idPaseo)}
+                  disabled={workingId === p.idPaseo}
+                  style={{ fontWeight: 600 }}
+                >
+                  {workingId === p.idPaseo ? (
+                    <IonSpinner name="dots" />
+                  ) : (
+                    "Iniciar Paseo"
+                  )}
+                </IonButton>
+              )}
+              {p.estado === "EN_CURSO" && (
+                <IonButton
+                  color="warning"
+                  expand="block"
+                  shape="round"
+                  onClick={() => finalizar(p.idPaseo)}
+                  disabled={workingId === p.idPaseo}
+                  style={{ fontWeight: 600 }}
+                >
+                  {workingId === p.idPaseo ? (
+                    <IonSpinner name="dots" />
+                  ) : (
+                    "Finalizar Paseo"
+                  )}
+                </IonButton>
+              )}
+            </>
           ) : (
-            "Iniciar paseo"
+            <IonButton
+              color="prussian-blue"
+              expand="block"
+              shape="round"
+              onClick={() => tomarPaseo(p.idPaseo)}
+              disabled={workingId === p.idPaseo}
+              style={{ fontWeight: 600 }}
+            >
+              {workingId === p.idPaseo ? (
+                <IonSpinner name="dots" />
+              ) : (
+                "Aceptar Trabajo"
+              )}
+            </IonButton>
           )}
-        </IonButton>
-      );
-    }
-    if (p.estado === "EN_CURSO") {
-      return (
-        <IonButton
-          color="warning"
-          expand="block"
-          onClick={() => finalizar(p.idPaseo)}
-          disabled={workingId === p.idPaseo}
-        >
-          {workingId === p.idPaseo ? (
-            <IonSpinner name="dots" />
-          ) : (
-            "Finalizar paseo"
-          )}
-        </IonButton>
-      );
-    }
-    // FINALIZADO / CANCELADO → sin acciones
-    return null;
-  };
+        </div>
+      </IonCardContent>
+    </IonCard>
+  );
 
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar color="selective-yellow">
           <IonTitle color="prussian-blue" className="coffeecake">
             Paws At Route
           </IonTitle>
         </IonToolbar>
-        <div style={{ overflow: "hidden" }}>
+        <div
+          style={{
+            background: "var(--ion-color-selective-yellow)",
+            paddingBottom: "10px",
+          }}
+        >
+          <IonSegment
+            value={view}
+            onIonChange={(e) => setView(e.detail.value as any)}
+            style={{
+              width: "90%",
+              margin: "0 auto",
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: "10px",
+              padding: "4px",
+            }}
+          >
+            <IonSegmentButton value="mis-paseos">
+              <IonLabel color="prussian-blue" style={{ fontWeight: 700 }}>
+                Mis Paseos
+              </IonLabel>
+            </IonSegmentButton>
+            <IonSegmentButton value="disponibles">
+              <IonLabel color="prussian-blue" style={{ fontWeight: 700 }}>
+                Disponibles
+              </IonLabel>
+            </IonSegmentButton>
+          </IonSegment>
+        </div>
+        <div style={{ overflow: "hidden", marginTop: "-1px" }}>
           <svg
             preserveAspectRatio="none"
             viewBox="0 0 1200 120"
@@ -252,150 +510,60 @@ const PanelPaseador: React.FC = () => {
         </div>
       </IonHeader>
 
-      <IonContent className="ion-padding" fullscreen>
-        <IonText
-          color="prussian-blue"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <h1 style={{ fontWeight: "bold", margin: 0 }}>
-            ¡Hola, {nombrePaseador || "Paseador"}!
-          </h1>
-          <IonBadge color="prussian-blue">Paseador</IonBadge>
-        </IonText>
+      <IonContent fullscreen className="ion-padding-horizontal">
+        <IonRefresher slot="fixed" onIonRefresh={(e) => cargar(e)}>
+          <IonRefresherContent pullingIcon={paw} refreshingSpinner="circles" />
+        </IonRefresher>
 
-        {/* Mis paseos */}
-        <IonText color="prussian-blue">
-          <h1 style={{ fontWeight: "bold" }}>Mis paseos</h1>
-        </IonText>
+        <div className="ion-padding-top ion-padding-bottom">
+          <IonItem lines="none">
+            <IonAvatar
+              slot="start"
+              style={{
+                background: "var(--ion-color-prussian-blue)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <IonIcon
+                icon={paw}
+                style={{ color: "white", fontSize: "20px" }}
+              />
+            </IonAvatar>
+            <IonLabel>
+              <p>Bienvenido de vuelta,</p>
+              <h2
+                style={{
+                  fontWeight: 800,
+                  fontSize: "1.2rem",
+                  color: "var(--ion-color-prussian-blue)",
+                }}
+              >
+                {nombrePaseador}
+              </h2>
+            </IonLabel>
+          </IonItem>
+        </div>
 
-        {loading ? (
-          <div className="ion-text-center ion-margin-vertical">
-            <IonSpinner name="dots" />
-            <IonText>
-              <p>Cargando paseos…</p>
-            </IonText>
+        {view === "mis-paseos" && (
+          <div className="animate__animated animate__fadeIn">
+            {loading
+              ? renderSkeleton()
+              : misPaseos && misPaseos.items.length > 0
+              ? misPaseos.items.map((p) => renderCard(p, "mio"))
+              : renderEmptyState("No tienes paseos activos.")}
           </div>
-        ) : misPaseos && misPaseos.items.length ? (
-          misPaseos.items.map((p) => (
-            <IonCard key={p.idPaseo}>
-              <IonCardHeader className="ion-text-center">
-                <IonCardTitle color="prussian-blue">
-                  Mascota: {p.mascota?.nombre ?? "—"}
-                </IonCardTitle>
-                <IonCardSubtitle>
-                  Dueño:{" "}
-                  {p.duenio ? `${p.duenio.nombre} ${p.duenio.apellido}` : "—"}
-                </IonCardSubtitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList lines="none">
-                  <IonItem>
-                    <IonLabel>
-                      <b>Fecha:</b> {fmtFecha(p.fecha)}
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <b>Hora:</b> {fmtHora(p.hora)}
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <b>Duración:</b> {p.duracion} min
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <b>Dirección:</b> {p.lugarEncuentro}
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <b>Estado:</b>{" "}
-                      <IonBadge color={estadoColor[p.estado as Estado]}>
-                        {estadoLabel[p.estado as Estado]}
-                      </IonBadge>
-                    </IonLabel>
-                  </IonItem>
-                </IonList>
-
-                {/* Acciones según estado */}
-                <div className="ion-text-center ion-margin-top">
-                  {renderAccionAsignado(p)}
-                </div>
-              </IonCardContent>
-            </IonCard>
-          ))
-        ) : (
-          <IonText>
-            <p>No hay paseos asignados</p>
-          </IonText>
         )}
 
-        {/* Disponibles */}
-        <IonText color="prussian-blue">
-          <h1 style={{ fontWeight: "bold" }}>Paseos disponibles</h1>
-        </IonText>
-
-        {loading ? null : disponibles && disponibles.items.length ? (
-          disponibles.items.map((p) => (
-            <IonCard key={`disp-${p.idPaseo}`}>
-              <IonCardHeader>
-                <IonCardTitle color="prussian-blue">
-                  Mascota: {p.mascota?.nombre ?? "—"}
-                </IonCardTitle>
-                <IonCardSubtitle>
-                  Dueño:{" "}
-                  {p.duenio ? `${p.duenio.nombre} ${p.duenio.apellido}` : "—"}
-                </IonCardSubtitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList lines="none">
-                  <IonItem>
-                    <IonLabel>
-                      <b>Fecha:</b> {fmtFecha(p.fecha)}
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <b>Hora:</b> {fmtHora(p.hora)}
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <b>Duración:</b> {p.duracion} min
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <b>Dirección:</b> {p.lugarEncuentro}
-                    </IonLabel>
-                  </IonItem>
-                </IonList>
-                <div className="ion-text-center ion-margin-top">
-                  <IonButton
-                    color="prussian-blue"
-                    onClick={() => tomarPaseo(p.idPaseo)}
-                    disabled={workingId === p.idPaseo}
-                  >
-                    {workingId === p.idPaseo ? (
-                      <IonSpinner name="dots" />
-                    ) : (
-                      "Tomar paseo"
-                    )}
-                  </IonButton>
-                </div>
-              </IonCardContent>
-            </IonCard>
-          ))
-        ) : (
-          <IonText>
-            <p>No hay paseos disponibles por ahora.</p>
-          </IonText>
+        {view === "disponibles" && (
+          <div className="animate__animated animate__fadeIn">
+            {loading
+              ? renderSkeleton()
+              : disponibles && disponibles.items.length > 0
+              ? disponibles.items.map((p) => renderCard(p, "disponible"))
+              : renderEmptyState("No hay paseos nuevos disponibles.")}
+          </div>
         )}
 
         <IonAlert

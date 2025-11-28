@@ -4,9 +4,6 @@ import {
   IonButtons,
   IonCard,
   IonCardContent,
-  IonCardHeader,
-  IonCardSubtitle,
-  IonCardTitle,
   IonContent,
   IonHeader,
   IonInput,
@@ -20,125 +17,81 @@ import {
   IonToolbar,
   IonText,
   IonSpinner,
+  IonSegment,
+  IonSegmentButton,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonIcon,
+  IonChip,
 } from "@ionic/react";
 import { useIonRouter } from "@ionic/react";
 import { useState, useCallback } from "react";
+import {
+  personOutline,
+  callOutline,
+  idCardOutline,
+  mailOutline,
+  lockClosedOutline,
+  mapOutline,
+  documentAttachOutline,
+  alertCircleOutline,
+  checkmarkCircleOutline,
+  timeOutline,
+} from "ionicons/icons";
 import { register as apiRegister } from "../services/api";
 
 const validateRol = (rol: string) => {
-  if (!rol) {
-    return "Debes seleccionar un rol.";
-  }
+  if (!rol) return "Debes seleccionar un rol.";
   return undefined;
 };
 
 const validateNombre = (nombre: string) => {
   const errores = [];
-  if (!nombre) {
-    return "El nombre es obligatorio.";
-  }
-  if (nombre.length < 3 || nombre.length > 15) {
-    errores.push("Debe tener entre 3 y 15 caracteres.");
-  }
-  if (/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g.test(nombre)) {
-    errores.push("Solo debe contener letras y espacios.");
-  }
+  if (!nombre) return "Obligatorio.";
+  if (nombre.length < 3 || nombre.length > 15) errores.push("3-15 caracteres.");
+  if (/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g.test(nombre)) errores.push("Solo letras.");
   return errores.length > 0 ? errores.join(" ") : undefined;
 };
 
 const validateApellido = (apellido: string) => {
   const errores = [];
-  if (!apellido) {
-    return "El apellido es obligatorio.";
-  }
-  if (apellido.length < 3 || apellido.length > 15) {
-    errores.push("Debe tener entre 3 y 15 caracteres.");
-  }
-  if (/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g.test(apellido)) {
-    errores.push("Solo debe contener letras y espacios.");
-  }
+  if (!apellido) return "Obligatorio.";
+  if (apellido.length < 3 || apellido.length > 15)
+    errores.push("3-15 caracteres.");
+  if (/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g.test(apellido)) errores.push("Solo letras.");
   return errores.length > 0 ? errores.join(" ") : undefined;
 };
 
 const validateTelefono = (telefono: string) => {
-  if (!telefono) {
-    return "El teléfono es obligatorio.";
-  }
-  if (telefono.length !== 9) {
-    return "Debe tener 9 dígitos.";
-  }
+  if (!telefono) return "Obligatorio.";
+  if (telefono.length !== 9) return "Debe tener 9 dígitos.";
   return undefined;
 };
 
 const validateRut = (rut: string) => {
-  if (!rut) {
-    return "El RUT es obligatorio.";
-  }
-  if (!/^\d{7,8}-[\dkK]$/.test(rut)) {
-    return "Formato inválido. Debe ser 12345678-9 (sin puntos).";
-  }
+  if (!rut) return "Obligatorio.";
+  if (!/^\d{7,8}-[\dkK]$/.test(rut)) return "Formato 12345678-9.";
   return undefined;
 };
 
 const validateEmail = (correo: string) => {
-  const erroresCorreo = [];
-  if (!correo) {
-    return "El correo es obligatorio.";
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
-    erroresCorreo.push("Por favor, ingresa un correo válido.");
-  } else {
-    const atIndex = correo.indexOf("@");
-    const localPart = correo.substring(0, atIndex);
-    const domainPart = correo.substring(atIndex + 1);
-
-    if (localPart.length > 64) {
-      erroresCorreo.push(
-        "La parte local (antes del @) no debe exceder los 64 caracteres."
-      );
-    }
-    if (domainPart.length > 255) {
-      erroresCorreo.push(
-        "El dominio (después del @) no debe exceder los 255 caracteres."
-      );
-    }
-  }
-  return erroresCorreo.length > 0 ? erroresCorreo.join(" ") : undefined;
+  if (!correo) return "El correo es obligatorio.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return "Correo inválido.";
+  return undefined;
 };
 
 const validatePassword = (password: string) => {
   const erroresPassword = [];
-  if (!password) {
-    return "La contraseña es obligatoria.";
-  }
-
-  if (password.length < 8 || password.length > 20) {
-    erroresPassword.push("Debe tener entre 8 y 20 caracteres.");
-  }
-  if (!/[a-z]/.test(password)) {
-    erroresPassword.push("Debe incluir al menos una minúscula.");
-  }
-  if (!/[A-Z]/.test(password)) {
-    erroresPassword.push("Debe incluir al menos una mayúscula.");
-  }
-  if (!/\d/.test(password)) {
-    erroresPassword.push("Debe incluir al menos un número.");
-  }
-  if (!/[@$!%*?&._-]/.test(password)) {
-    erroresPassword.push("Debe incluir un carácter especial (@$!%*?&._-).");
-  }
-  if (/[^A-Za-z\d@$!%*?&._-]/.test(password)) {
-    erroresPassword.push("No debe contener caracteres inválidos o espacios.");
-  }
-
+  if (!password) return "Obligatoria.";
+  if (password.length < 8) erroresPassword.push("Min 8 caracteres.");
+  if (!/[A-Z]/.test(password)) erroresPassword.push("Una mayúscula.");
+  if (!/\d/.test(password)) erroresPassword.push("Un número.");
   return erroresPassword.length > 0 ? erroresPassword.join(" ") : undefined;
 };
 
 const validateComuna = (comuna: string) => {
-  if (!comuna) {
-    return "Debes seleccionar una comuna.";
-  }
+  if (!comuna) return "Selecciona una comuna.";
   return undefined;
 };
 
@@ -148,7 +101,7 @@ const validateFiles = (
   antecedentes: File | null
 ) => {
   if (rol === "paseador" && (!carnet || !antecedentes)) {
-    return "Debes adjuntar carnet y antecedentes para el rol Paseador.";
+    return "Debes adjuntar ambos documentos.";
   }
   return undefined;
 };
@@ -193,7 +146,7 @@ type FormErrors = {
 const Registro: React.FC = () => {
   const router = useIonRouter();
 
-  const [rol, setRol] = useState<string>("");
+  const [rol, setRol] = useState<string>("dueño"); // Default a dueño
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -209,58 +162,26 @@ const Registro: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [apiErrorMsg, setApiErrorMsg] = useState<string | null>(null);
 
-  const handleRolChange = useCallback((e: any) => setRol(e.detail.value), []);
   const handleNombreInput = useCallback((e: any) => {
     const input = e.detail.value || "";
-    const soloLetras = input.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "");
-    setNombre(soloLetras);
+    setNombre(input.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, ""));
   }, []);
   const handleApellidoInput = useCallback((e: any) => {
     const input = e.detail.value || "";
-    const soloLetras = input.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "");
-    setApellido(soloLetras);
+    setApellido(input.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, ""));
   }, []);
   const handleTelefonoInput = useCallback((e: any) => {
     const input = e.detail.value || "";
-    const soloNumeros = input.replace(/\D/g, "").slice(0, 9);
-    setTelefono(soloNumeros);
+    setTelefono(input.replace(/\D/g, "").slice(0, 9));
   }, []);
   const handleRutInput = useCallback((e: any) => {
     let input = e.detail.value || "";
-    input = input.replace(/[^0-9Kk-]/g, "");
-    input = input.replace(/(?!^)-(?=.*-)/g, "");
+    input = input.replace(/[^0-9Kk-]/g, "").replace(/(?!^)-(?=.*-)/g, "");
     setRut(input.slice(0, 10));
   }, []);
-  const handleCorreoChange = useCallback(
-    (e: any) => setCorreo(e.detail.value ?? ""),
-    []
-  );
-  const handlePasswordChange = useCallback(
-    (e: any) => setPassword(e.detail.value ?? ""),
-    []
-  );
-  const handleComunaChange = useCallback(
-    (e: any) => setComuna(e.detail.value),
-    []
-  );
-  const handleCarnetChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0] ?? null;
-      setCarnetFile(file);
-    },
-    []
-  );
-  const handleAntecedentesChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0] ?? null;
-      setAntecedentesFile(file);
-    },
-    []
-  );
 
   const validarFormulario = useCallback(() => {
     const nuevosErrores: FormErrors = {};
-
     nuevosErrores.rol = validateRol(rol);
     nuevosErrores.nombre = validateNombre(nombre);
     nuevosErrores.apellido = validateApellido(apellido);
@@ -289,18 +210,14 @@ const Registro: React.FC = () => {
     antecedentesFile,
   ]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setApiErrorMsg(null);
-
-    if (!validarFormulario()) {
-      return;
-    }
+    if (!validarFormulario()) return;
 
     setSubmitting(true);
     try {
       const rolApi = rol === "paseador" ? "PASEADOR" : "DUEÑO";
-
       await apiRegister({
         rut,
         nombre,
@@ -314,15 +231,13 @@ const Registro: React.FC = () => {
         antecedentes:
           rolApi === "PASEADOR" ? antecedentesFile ?? undefined : undefined,
       });
-
       router.push("/login", "root");
     } catch (err: any) {
-      const msg =
+      setApiErrorMsg(
         err?.response?.data?.error ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "No se pudo completar el registro.";
-      setApiErrorMsg(msg);
+          err?.message ||
+          "No se pudo completar el registro."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -330,7 +245,7 @@ const Registro: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar color="selective-yellow">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/login" color="prussian-blue" />
@@ -342,323 +257,476 @@ const Registro: React.FC = () => {
         <HeaderWave />
       </IonHeader>
 
-      <IonContent className="ion-padding" fullscreen>
-        <IonCard color="success">
-          <IonCardHeader>
-            <IonCardTitle>Como dueño</IonCardTitle>
-            <IonCardSubtitle>Si te registras</IonCardSubtitle>
-          </IonCardHeader>
+      <IonContent fullscreen className="ion-padding">
+        <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+          <IonText color="prussian-blue" className="ion-text-center">
+            <h1 style={{ fontWeight: 800, margin: "10px 0" }}>
+              Crea tu cuenta
+            </h1>
+            <p style={{ color: "#666", marginTop: 0 }}>
+              Únete a nuestra comunidad
+            </p>
+          </IonText>
 
-          <IonCardContent>Tu cuenta estará activa de inmediato.</IonCardContent>
-        </IonCard>
-        <IonCard color="warning">
-          <IonCardHeader>
-            <IonCardTitle>Como paseador</IonCardTitle>
-            <IonCardSubtitle>Si te registras</IonCardSubtitle>
-          </IonCardHeader>
-
-          <IonCardContent>
-            Tu cuenta estará activa una vez que el administrador lo apruebe.
-          </IonCardContent>
-        </IonCard>
-        <IonCard>
-          <IonCardHeader className="ion-text-center">
-            <IonCardTitle color="prussian-blue">Registro</IonCardTitle>
-            <IonCardSubtitle>¡Bienvenido a Paws At Route!</IonCardSubtitle>
-          </IonCardHeader>
-
-          <IonCardContent>
-            <form onSubmit={handleSubmit} noValidate>
-              <IonItem>
-                <IonSelect
-                  label="Rol"
-                  placeholder="Selecciona un rol"
-                  labelPlacement="stacked"
-                  value={rol}
-                  onIonChange={handleRolChange}
+          <IonCard
+            style={{
+              borderRadius: "20px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              overflow: "visible",
+            }}
+          >
+            <IonCardContent>
+              {/* Selector de Rol Mejorado */}
+              <div className="ion-margin-bottom">
+                <IonLabel
+                  style={{ marginLeft: "5px", fontWeight: 600, color: "#555" }}
                 >
-                  <IonSelectOption value="dueño">Dueño</IonSelectOption>
-                  <IonSelectOption value="paseador">Paseador</IonSelectOption>
-                </IonSelect>
-              </IonItem>
-              {errors.rol && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.rol}</p>
-                </IonText>
-              )}
-
-              <IonItem>
-                <IonInput
-                  label="Nombre"
-                  labelPlacement="stacked"
-                  placeholder="John"
-                  value={nombre}
-                  onIonInput={handleNombreInput}
-                  minlength={3}
-                  maxlength={15}
-                />
-              </IonItem>
-              {errors.nombre && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.nombre}</p>
-                </IonText>
-              )}
-
-              <IonItem>
-                <IonInput
-                  label="Apellido"
-                  labelPlacement="stacked"
-                  placeholder="Smith"
-                  value={apellido}
-                  onIonInput={handleApellidoInput}
-                  minlength={3}
-                  maxlength={15}
-                />
-              </IonItem>
-              {errors.apellido && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.apellido}</p>
-                </IonText>
-              )}
-
-              <IonItem>
-                <IonLabel slot="start" style={{ margin: 0 }}>
-                  🇨🇱 +569
+                  ¿Qué deseas hacer?
                 </IonLabel>
-                <IonInput
-                  label="Teléfono"
-                  labelPlacement="stacked"
-                  placeholder="123456789"
-                  type="tel"
-                  value={telefono}
-                  onIonInput={handleTelefonoInput}
-                  minlength={9}
-                  maxlength={9}
-                />
-              </IonItem>
-              {errors.telefono && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.telefono}</p>
-                </IonText>
-              )}
-
-              <IonItem>
-                <IonInput
-                  label="RUT"
-                  labelPlacement="stacked"
-                  placeholder="12345678-9"
-                  value={rut}
-                  onIonInput={handleRutInput}
-                  maxlength={10}
-                />
-              </IonItem>
-              {errors.rut && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.rut}</p>
-                </IonText>
-              )}
-
-              <IonItem>
-                <IonInput
-                  label="Correo"
-                  placeholder="ejemplo@gmail.com"
-                  labelPlacement="stacked"
-                  type="email"
-                  autocomplete="email"
-                  inputmode="email"
-                  value={correo}
-                  onIonChange={handleCorreoChange}
-                />
-              </IonItem>
-              {errors.correo && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.correo}</p>
-                </IonText>
-              )}
-
-              <IonItem className="ion-margin-top">
-                <IonInput
-                  label="Contraseña"
-                  placeholder="********"
-                  labelPlacement="stacked"
-                  type="password"
-                  autocomplete="new-password"
-                  value={password}
-                  onIonChange={handlePasswordChange}
-                  minlength={8}
-                  maxlength={20}
+                <IonSegment
+                  value={rol}
+                  onIonChange={(e) => setRol(e.detail.value as string)}
+                  style={{
+                    background: "#f4f5f8",
+                    borderRadius: "12px",
+                    padding: "4px",
+                    marginTop: "8px",
+                  }}
                 >
-                  <IonInputPasswordToggle slot="end" color="prussian-blue" />
-                </IonInput>
-              </IonItem>
-              {errors.password && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.password}</p>
-                </IonText>
-              )}
+                  <IonSegmentButton value="dueño">
+                    <IonLabel style={{ fontWeight: 700 }}>Dueño</IonLabel>
+                  </IonSegmentButton>
+                  <IonSegmentButton value="paseador">
+                    <IonLabel style={{ fontWeight: 700 }}>Paseador</IonLabel>
+                  </IonSegmentButton>
+                </IonSegment>
+              </div>
 
-              <IonItem>
-                <IonSelect
-                  label="Comuna"
-                  placeholder="Selecciona tu comuna de residencia"
-                  labelPlacement="stacked"
-                  value={comuna}
-                  onIonChange={handleComunaChange}
-                >
-                  <IonSelectOption value="Alhué">Alhué</IonSelectOption>
-                  <IonSelectOption value="Buin">Buin</IonSelectOption>
-                  <IonSelectOption value="Calera de Tango">
-                    Calera de Tango
-                  </IonSelectOption>
-                  <IonSelectOption value="Cerrillos">Cerrillos</IonSelectOption>
-                  <IonSelectOption value="Cerro Navia">
-                    Cerro Navia
-                  </IonSelectOption>
-                  <IonSelectOption value="Colina">Colina</IonSelectOption>
-                  <IonSelectOption value="Conchalí">Conchalí</IonSelectOption>
-                  <IonSelectOption value="Curacaví">Curacaví</IonSelectOption>
-                  <IonSelectOption value="El Bosque">El Bosque</IonSelectOption>
-                  <IonSelectOption value="El Monte">El Monte</IonSelectOption>
-                  <IonSelectOption value="Estación Central">
-                    Estación Central
-                  </IonSelectOption>
-                  <IonSelectOption value="Huechuraba">
-                    Huechuraba
-                  </IonSelectOption>
-                  <IonSelectOption value="Independencia">
-                    Independencia
-                  </IonSelectOption>
-                  <IonSelectOption value="Isla de Maipo">
-                    Isla de Maipo
-                  </IonSelectOption>
-                  <IonSelectOption value="La Cisterna">
-                    La Cisterna
-                  </IonSelectOption>
-                  <IonSelectOption value="La Florida">
-                    La Florida
-                  </IonSelectOption>
-                  <IonSelectOption value="La Granja">La Granja</IonSelectOption>
-                  <IonSelectOption value="La Pintana">
-                    La Pintana
-                  </IonSelectOption>
-                  <IonSelectOption value="La Reina">La Reina</IonSelectOption>
-                  <IonSelectOption value="Lampa">Lampa</IonSelectOption>
-                  <IonSelectOption value="Las Condes">
-                    Las Condes
-                  </IonSelectOption>
-                  <IonSelectOption value="Lo Barnechea">
-                    Lo Barnechea
-                  </IonSelectOption>
-                  <IonSelectOption value="Lo Espejo">Lo Espejo</IonSelectOption>
-                  <IonSelectOption value="Lo Prado">Lo Prado</IonSelectOption>
-                  <IonSelectOption value="Macul">Macul</IonSelectOption>
-                  <IonSelectOption value="Maipú">Maipú</IonSelectOption>
-                  <IonSelectOption value="María Pinto">
-                    María Pinto
-                  </IonSelectOption>
-                  <IonSelectOption value="Melipilla">Melipilla</IonSelectOption>
-                  <IonSelectOption value="Ñuñoa">Ñuñoa</IonSelectOption>
-                  <IonSelectOption value="Padre Hurtado">
-                    Padre Hurtado
-                  </IonSelectOption>
-                  <IonSelectOption value="Paine">Paine</IonSelectOption>
-                  <IonSelectOption value="Pedro Aguirre Cerda">
-                    Pedro Aguirre Cerda
-                  </IonSelectOption>
-                  <IonSelectOption value="Peñaflor">Peñaflor</IonSelectOption>
-                  <IonSelectOption value="Peñalolén">Peñalolén</IonSelectOption>
-                  <IonSelectOption value="Pirque">Pirque</IonSelectOption>
-                  <IonSelectOption value="Providencia">
-                    Providencia
-                  </IonSelectOption>
-                  <IonSelectOption value="Pudahuel">Pudahuel</IonSelectOption>
-                  <IonSelectOption value="Puente Alto">
-                    Puente Alto
-                  </IonSelectOption>
-                  <IonSelectOption value="Quilicura">Quilicura</IonSelectOption>
-                  <IonSelectOption value="Quinta Normal">
-                    Quinta Normal
-                  </IonSelectOption>
-                  <IonSelectOption value="Recoleta">Recoleta</IonSelectOption>
-                  <IonSelectOption value="Renca">Renca</IonSelectOption>
-                  <IonSelectOption value="San Bernardo">
-                    San Bernardo
-                  </IonSelectOption>
-                  <IonSelectOption value="San Joaquín">
-                    San Joaquín
-                  </IonSelectOption>
-                  <IonSelectOption value="San José de Maipo">
-                    San José de Maipo
-                  </IonSelectOption>
-                  <IonSelectOption value="San Miguel">
-                    San Miguel
-                  </IonSelectOption>
-                  <IonSelectOption value="San Pedro">San Pedro</IonSelectOption>
-                  <IonSelectOption value="San Ramón">San Ramón</IonSelectOption>
-                  <IonSelectOption value="Santiago">Santiago</IonSelectOption>
-                  <IonSelectOption value="Talagante">Talagante</IonSelectOption>
-                  <IonSelectOption value="Tiltil">Tiltil</IonSelectOption>
-                  <IonSelectOption value="Vitacura">Vitacura</IonSelectOption>
-                </IonSelect>
-              </IonItem>
-              {errors.comuna && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.comuna}</p>
-                </IonText>
-              )}
-
-              {rol === "paseador" && (
-                <>
-                  <IonItem>
-                    <IonLabel position="stacked">
-                      Carnet de identidad (PDF)
-                    </IonLabel>
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={handleCarnetChange}
-                    />
-                  </IonItem>
-
-                  <IonItem>
-                    <IonLabel position="stacked">
-                      Antecedentes penales (PDF)
-                    </IonLabel>
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={handleAntecedentesChange}
-                    />
-                  </IonItem>
-                </>
-              )}
-              {errors.files && (
-                <IonText color="danger">
-                  <p className="ion-padding-start">{errors.files}</p>
-                </IonText>
-              )}
-
-              {apiErrorMsg && (
-                <IonText color="danger">
-                  <p className="ion-padding-start ion-margin-top ion-text-center">
-                    {apiErrorMsg}
-                  </p>
-                </IonText>
-              )}
-
-              <IonButton
-                expand="block"
-                className="ion-margin-top"
-                color="prussian-blue"
-                shape="round"
-                type="submit"
-                disabled={submitting}
+              <div
+                style={{
+                  marginBottom: "20px",
+                  padding: "10px",
+                  background: rol === "dueño" ? "#e8f5e9" : "#fff3e0",
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
               >
-                {submitting ? <IonSpinner name="dots" /> : "Regístrate"}
-              </IonButton>
-            </form>
-          </IonCardContent>
-        </IonCard>
+                <IonIcon
+                  icon={rol === "dueño" ? checkmarkCircleOutline : timeOutline}
+                  style={{
+                    fontSize: "24px",
+                    marginRight: "10px",
+                    color:
+                      rol === "dueño"
+                        ? "var(--ion-color-success)"
+                        : "var(--ion-color-warning)",
+                  }}
+                />
+                <IonText
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "#444",
+                    lineHeight: "1.3",
+                  }}
+                >
+                  {rol === "dueño"
+                    ? "Tu cuenta estará activa de inmediato para solicitar paseos."
+                    : "Tu cuenta requerirá aprobación de un administrador (carnet y antecedentes)."}
+                </IonText>
+              </div>
+
+              <form onSubmit={handleSubmit} noValidate>
+                <IonGrid className="ion-no-padding">
+                  <IonRow>
+                    <IonCol size="6">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonIcon
+                          slot="start"
+                          icon={personOutline}
+                          color="medium"
+                        />
+                        <IonInput
+                          fill="outline"
+                          label="Nombre"
+                          labelPlacement="floating"
+                          value={nombre}
+                          onIonInput={handleNombreInput}
+                          maxlength={15}
+                        />
+                      </IonItem>
+                      {errors.nombre && (
+                        <IonText color="danger">
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              margin: "-10px 0 10px 5px",
+                            }}
+                          >
+                            {errors.nombre}
+                          </p>
+                        </IonText>
+                      )}
+                    </IonCol>
+                    <IonCol size="6">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonInput
+                          fill="outline"
+                          label="Apellido"
+                          labelPlacement="floating"
+                          value={apellido}
+                          onIonInput={handleApellidoInput}
+                          maxlength={15}
+                        />
+                      </IonItem>
+                      {errors.apellido && (
+                        <IonText color="danger">
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              margin: "-10px 0 10px 5px",
+                            }}
+                          >
+                            {errors.apellido}
+                          </p>
+                        </IonText>
+                      )}
+                    </IonCol>
+                  </IonRow>
+
+                  <IonRow>
+                    <IonCol size="6">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonIcon
+                          slot="start"
+                          icon={idCardOutline}
+                          color="medium"
+                        />
+                        <IonInput
+                          fill="outline"
+                          label="RUT"
+                          labelPlacement="floating"
+                          placeholder="12345678-9"
+                          value={rut}
+                          onIonInput={handleRutInput}
+                          maxlength={10}
+                        />
+                      </IonItem>
+                      {errors.rut && (
+                        <IonText color="danger">
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              margin: "-10px 0 10px 5px",
+                            }}
+                          >
+                            {errors.rut}
+                          </p>
+                        </IonText>
+                      )}
+                    </IonCol>
+                    <IonCol size="6">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonIcon
+                          slot="start"
+                          icon={callOutline}
+                          color="medium"
+                        />
+                        <IonLabel
+                          slot="start"
+                          style={{ margin: 0, color: "#666" }}
+                        >
+                          +569
+                        </IonLabel>
+                        <IonInput
+                          fill="outline"
+                          label="Teléfono"
+                          labelPlacement="floating"
+                          type="tel"
+                          value={telefono}
+                          onIonInput={handleTelefonoInput}
+                          maxlength={9}
+                        />
+                      </IonItem>
+                      {errors.telefono && (
+                        <IonText color="danger">
+                          <p
+                            style={{
+                              fontSize: "0.75rem",
+                              margin: "-10px 0 10px 5px",
+                            }}
+                          >
+                            {errors.telefono}
+                          </p>
+                        </IonText>
+                      )}
+                    </IonCol>
+                  </IonRow>
+
+                  <IonItem lines="none" className="ion-margin-bottom">
+                    <IonIcon slot="start" icon={mapOutline} color="medium" />
+                    <IonSelect
+                      fill="outline"
+                      label="Comuna"
+                      labelPlacement="floating"
+                      value={comuna}
+                      onIonChange={(e) => setComuna(e.detail.value)}
+                    >
+                      {[
+                        "Alhué",
+                        "Buin",
+                        "Calera de Tango",
+                        "Cerrillos",
+                        "Cerro Navia",
+                        "Colina",
+                        "Conchalí",
+                        "Curacaví",
+                        "El Bosque",
+                        "El Monte",
+                        "Estación Central",
+                        "Huechuraba",
+                        "Independencia",
+                        "Isla de Maipo",
+                        "La Cisterna",
+                        "La Florida",
+                        "La Granja",
+                        "La Pintana",
+                        "La Reina",
+                        "Lampa",
+                        "Las Condes",
+                        "Lo Barnechea",
+                        "Lo Espejo",
+                        "Lo Prado",
+                        "Macul",
+                        "Maipú",
+                        "María Pinto",
+                        "Melipilla",
+                        "Ñuñoa",
+                        "Padre Hurtado",
+                        "Paine",
+                        "Pedro Aguirre Cerda",
+                        "Peñaflor",
+                        "Peñalolén",
+                        "Pirque",
+                        "Providencia",
+                        "Pudahuel",
+                        "Puente Alto",
+                        "Quilicura",
+                        "Quinta Normal",
+                        "Recoleta",
+                        "Renca",
+                        "San Bernardo",
+                        "San Joaquín",
+                        "San José de Maipo",
+                        "San Miguel",
+                        "San Pedro",
+                        "San Ramón",
+                        "Santiago",
+                        "Talagante",
+                        "Tiltil",
+                        "Vitacura",
+                      ].map((c) => (
+                        <IonSelectOption key={c} value={c}>
+                          {c}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+                  {errors.comuna && (
+                    <IonText color="danger">
+                      <p
+                        style={{
+                          fontSize: "0.75rem",
+                          margin: "-10px 0 10px 5px",
+                        }}
+                      >
+                        {errors.comuna}
+                      </p>
+                    </IonText>
+                  )}
+
+                  <IonItem lines="none" className="ion-margin-bottom">
+                    <IonIcon slot="start" icon={mailOutline} color="medium" />
+                    <IonInput
+                      fill="outline"
+                      label="Correo"
+                      labelPlacement="floating"
+                      type="email"
+                      value={correo}
+                      onIonChange={(e) => setCorreo(e.detail.value!)}
+                    />
+                  </IonItem>
+                  {errors.correo && (
+                    <IonText color="danger">
+                      <p
+                        style={{
+                          fontSize: "0.75rem",
+                          margin: "-10px 0 10px 5px",
+                        }}
+                      >
+                        {errors.correo}
+                      </p>
+                    </IonText>
+                  )}
+
+                  <IonItem lines="none" className="ion-margin-bottom">
+                    <IonIcon
+                      slot="start"
+                      icon={lockClosedOutline}
+                      color="medium"
+                    />
+                    <IonInput
+                      fill="outline"
+                      label="Contraseña"
+                      labelPlacement="floating"
+                      type="password"
+                      value={password}
+                      onIonChange={(e) => setPassword(e.detail.value!)}
+                    >
+                      <IonInputPasswordToggle slot="end" color="medium" />
+                    </IonInput>
+                  </IonItem>
+                  {errors.password && (
+                    <IonText color="danger">
+                      <p
+                        style={{
+                          fontSize: "0.75rem",
+                          margin: "-10px 0 10px 5px",
+                        }}
+                      >
+                        {errors.password}
+                      </p>
+                    </IonText>
+                  )}
+
+                  {rol === "paseador" && (
+                    <div
+                      style={{
+                        marginTop: "20px",
+                        padding: "15px",
+                        border: "1px dashed #bdbdbd",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      <IonText color="medium">
+                        <h6
+                          style={{
+                            margin: "0 0 10px 0",
+                            fontSize: "0.9rem",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Documentación requerida (PDF)
+                        </h6>
+                      </IonText>
+
+                      <IonItem
+                        lines="none"
+                        style={{
+                          "--background": "transparent",
+                          "--padding-start": 0,
+                        }}
+                      >
+                        <IonIcon
+                          slot="start"
+                          icon={documentAttachOutline}
+                          color="secondary"
+                        />
+                        <div style={{ width: "100%" }}>
+                          <IonLabel
+                            position="stacked"
+                            style={{ marginBottom: "5px" }}
+                          >
+                            Carnet de Identidad
+                          </IonLabel>
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) =>
+                              setCarnetFile(e.target.files?.[0] ?? null)
+                            }
+                            style={{ fontSize: "0.8rem" }}
+                          />
+                        </div>
+                      </IonItem>
+
+                      <IonItem
+                        lines="none"
+                        style={{
+                          "--background": "transparent",
+                          "--padding-start": 0,
+                        }}
+                      >
+                        <IonIcon
+                          slot="start"
+                          icon={documentAttachOutline}
+                          color="secondary"
+                        />
+                        <div style={{ width: "100%" }}>
+                          <IonLabel
+                            position="stacked"
+                            style={{ marginBottom: "5px" }}
+                          >
+                            Antecedentes Penales
+                          </IonLabel>
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) =>
+                              setAntecedentesFile(e.target.files?.[0] ?? null)
+                            }
+                            style={{ fontSize: "0.8rem" }}
+                          />
+                        </div>
+                      </IonItem>
+                      {errors.files && (
+                        <IonChip color="danger" outline>
+                          <IonLabel>{errors.files}</IonLabel>
+                        </IonChip>
+                      )}
+                    </div>
+                  )}
+                </IonGrid>
+
+                {apiErrorMsg && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: "15px",
+                      color: "var(--ion-color-danger)",
+                    }}
+                  >
+                    <IonIcon
+                      icon={alertCircleOutline}
+                      style={{ marginRight: "5px" }}
+                    />
+                    <IonText>
+                      <p style={{ margin: 0 }}>{apiErrorMsg}</p>
+                    </IonText>
+                  </div>
+                )}
+
+                <IonButton
+                  expand="block"
+                  shape="round"
+                  type="submit"
+                  disabled={submitting}
+                  color="prussian-blue"
+                  className="ion-margin-top"
+                  style={{
+                    height: "50px",
+                    fontWeight: 700,
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  {submitting ? <IonSpinner name="crescent" /> : "Crear Cuenta"}
+                </IonButton>
+              </form>
+            </IonCardContent>
+          </IonCard>
+        </div>
       </IonContent>
     </IonPage>
   );

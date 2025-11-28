@@ -1,5 +1,5 @@
 :root {
-  --ion-font-family: "Onest";
+  --ion-font-family: "Inter", sans-serif;
 }
 
 :root {
@@ -69,27 +69,4 @@
   font-weight: normal;
   font-style: normal;
   font-display: swap;
-}
-
-@font-face {
-  font-family: "Onest";
-  src: url("/src/assets/fonts/onest-latin-400-normal.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-.clickable-link {
-  color: var(--ion-color-ut-orange);
-  font-weight: bold;
-  text-decoration: underline;
-  cursor: pointer;
-
-  --padding-start: 2px;
-  --padding-end: 2px;
-  margin: 0;
-  height: auto;
-  text-transform: none;
-  font-size: inherit;
-  letter-spacing: inherit;
 }

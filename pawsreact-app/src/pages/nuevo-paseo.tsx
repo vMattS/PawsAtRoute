@@ -18,10 +18,7 @@ import {
   IonLabel,
   IonList,
   IonModal,
-  IonNote,
   IonPage,
-  IonRadio,
-  IonRadioGroup,
   IonSelect,
   IonSelectOption,
   IonTitle,
@@ -29,10 +26,25 @@ import {
   IonText,
   IonSpinner,
   IonAlert,
-  IonListHeader,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonIcon,
+  IonTextarea,
 } from "@ionic/react";
 import { useEffect, useMemo, useState } from "react";
 import { useIonRouter } from "@ionic/react";
+import {
+  pawOutline,
+  calendarOutline,
+  timeOutline,
+  locationOutline,
+  cashOutline,
+  createOutline,
+  alertCircleOutline,
+  addCircleOutline,
+  walkOutline,
+} from "ionicons/icons";
 import { Auth } from "../services/auth";
 import { listMisMascotas, crearPaseo, type Mascota } from "../services/api";
 
@@ -41,7 +53,6 @@ const MAX_MASCOTAS = 3;
 const NuevoPaseo: React.FC = () => {
   const router = useIonRouter();
 
-  // Guard: solo DUEÑO logueado
   useEffect(() => {
     const u = Auth.getUser();
     if (!u) {
@@ -54,13 +65,12 @@ const NuevoPaseo: React.FC = () => {
     }
   }, [router]);
 
-  // Estado
   const [mascotas, setMascotas] = useState<Mascota[]>([]);
   const [selMascotas, setSelMascotas] = useState<number[]>([]);
-  const [fechaISO, setFechaISO] = useState<string>(""); // ISO completo
-  const [duracionMin, setDuracionMin] = useState<string>("60"); // "30" | "60" | ...
+  const [fechaISO, setFechaISO] = useState<string>("");
+  const [duracionMin, setDuracionMin] = useState<string>("60");
   const [lugar, setLugar] = useState<string>("");
-  const [metodoPago, setMetodoPago] = useState<string>(""); // opcional, lo incluimos en notas
+  const [metodoPago, setMetodoPago] = useState<string>("");
   const [notas, setNotas] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
@@ -72,7 +82,6 @@ const NuevoPaseo: React.FC = () => {
     message?: string;
   }>({ open: false });
 
-  // Cargar mascotas del dueño
   useEffect(() => {
     (async () => {
       try {
@@ -91,12 +100,11 @@ const NuevoPaseo: React.FC = () => {
     })();
   }, []);
 
-  // Utilidad: limitar selección a 3
   const toggleMascota = (id: number, checked: boolean) => {
     setSelMascotas((prev) => {
       if (checked) {
         if (prev.includes(id)) return prev;
-        if (prev.length >= MAX_MASCOTAS) return prev; // no agregar más de 3
+        if (prev.length >= MAX_MASCOTAS) return prev;
         return [...prev, id];
       } else {
         return prev.filter((x) => x !== id);
@@ -104,12 +112,10 @@ const NuevoPaseo: React.FC = () => {
     });
   };
 
-  // Formateos para backend
   const fechaStr = useMemo(() => {
     if (!fechaISO) return "";
     try {
       const d = new Date(fechaISO);
-      // "YYYY-MM-DD"
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, "0");
       const dd = String(d.getDate()).padStart(2, "0");
@@ -123,7 +129,6 @@ const NuevoPaseo: React.FC = () => {
     if (!fechaISO) return "";
     try {
       const d = new Date(fechaISO);
-      // "HH:mm" en hora local
       const hh = String(d.getHours()).padStart(2, "0");
       const mi = String(d.getMinutes()).padStart(2, "0");
       return `${hh}:${mi}`;
@@ -143,14 +148,14 @@ const NuevoPaseo: React.FC = () => {
     return null;
   };
 
-  const publicar = async () => {
+  const publicar = async (e: React.FormEvent) => {
+    e.preventDefault();
     const v = validar();
     if (v) {
-      setAlert({ open: true, header: "Campos inválidos", message: v });
+      setAlert({ open: true, header: "Atención", message: v });
       return;
     }
 
-    // ⬇️ Tomamos el dueño desde la sesión guardada
     const u = Auth.getUser();
     if (!u?.idUsuario) {
       setAlert({
@@ -166,7 +171,6 @@ const NuevoPaseo: React.FC = () => {
     setErr(null);
 
     try {
-      // Base del payload + duenioId desde el usuario logueado
       const payloadBase = {
         fecha: fechaStr,
         hora: horaStr,
@@ -175,10 +179,9 @@ const NuevoPaseo: React.FC = () => {
         notas: [notas, metodoPago ? `Método de pago: ${metodoPago}` : ""]
           .filter(Boolean)
           .join(" | "),
-        duenioId: Number(u.idUsuario), // 👈 CLAVE
+        duenioId: Number(u.idUsuario),
       };
 
-      // Un paseo por cada mascota seleccionada
       await Promise.all(
         selMascotas.map((mascotaId) =>
           crearPaseo({ ...payloadBase, mascotaId })
@@ -187,25 +190,31 @@ const NuevoPaseo: React.FC = () => {
 
       setAlert({
         open: true,
-        header: "Paseo publicado",
-        message: "Se publicaron tus paseos correctamente.",
+        header: "¡Listo!",
+        message: "Tu solicitud de paseo ha sido publicada exitosamente.",
       });
-      setTimeout(() => router.push("/tabs/tab1", "root"), 600);
+      setTimeout(() => router.push("/tabs/tab1", "root"), 1500);
     } catch (e: any) {
       const msg =
         e?.response?.data?.error ||
         e?.message ||
         "No se pudo publicar el paseo";
       setErr(msg);
-      setAlert({ open: true, header: "Error", message: msg });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const duracionOptions = [
+    { val: "30", label: "30 min", price: "$10.000" },
+    { val: "60", label: "1 hora", price: "$15.000" },
+    { val: "90", label: "1h 30m", price: "$20.000" },
+    { val: "120", label: "2 horas", price: "$25.000" },
+  ];
+
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar color="selective-yellow">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/tabs/tab1" color="prussian-blue" />
@@ -238,199 +247,320 @@ const NuevoPaseo: React.FC = () => {
         </div>
       </IonHeader>
 
-      <IonContent className="ion-padding" fullscreen>
-        <IonCard>
-          <IonCardHeader className="ion-text-center">
-            <IonCardTitle color="prussian-blue">
-              Solicitud de paseo
-            </IonCardTitle>
-            <IonCardSubtitle>Información del paseo</IonCardSubtitle>
-          </IonCardHeader>
+      <IonContent fullscreen className="ion-padding">
+        <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+          <IonText color="prussian-blue" className="ion-text-center">
+            <h1 style={{ fontWeight: 800, margin: "10px 0" }}>
+              Solicitar Paseo
+            </h1>
+            <p style={{ marginTop: 0, color: "#666" }}>
+              Planifica la próxima aventura de tu mascota
+            </p>
+          </IonText>
 
-          <IonCardContent>
-            {loading ? (
-              <div className="ion-text-center ion-margin-vertical">
-                <IonSpinner name="dots" />
-                <IonText>
-                  <p>Cargando tus mascotas…</p>
-                </IonText>
-              </div>
-            ) : (
-              <>
+          <IonCard
+            style={{
+              borderRadius: "20px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              overflow: "visible",
+              marginTop: "20px",
+            }}
+          >
+            <IonCardContent>
+              {loading ? (
+                <div className="ion-text-center ion-padding">
+                  <IonSpinner name="dots" />
+                  <p>Cargando información...</p>
+                </div>
+              ) : (
                 <form onSubmit={publicar}>
-                  <IonList lines="inset">
-                    <IonListHeader>
-                      <IonLabel color="prussian-blue">
-                        ¿Qué mascota irá de paseo?
-                      </IonLabel>
-                    </IonListHeader>
+                  {/* SECCIÓN MASCOTAS */}
+                  <div className="ion-margin-bottom">
+                    <IonLabel
+                      style={{
+                        fontWeight: 700,
+                        color: "var(--ion-color-prussian-blue)",
+                        marginLeft: "5px",
+                      }}
+                    >
+                      <IonIcon
+                        icon={pawOutline}
+                        style={{ verticalAlign: "middle", marginRight: "5px" }}
+                      />
+                      ¿Quién va de paseo?{" "}
+                      <span
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 400,
+                          color: "#999",
+                        }}
+                      >
+                        ({selMascotas.length}/{MAX_MASCOTAS})
+                      </span>
+                    </IonLabel>
 
                     {mascotas.length ? (
-                      mascotas.map((m) => {
-                        const checked = selMascotas.includes(m.idMascota);
-                        const disabled =
-                          !checked && selMascotas.length >= MAX_MASCOTAS;
-                        return (
-                          <IonItem key={m.idMascota}>
-                            <IonCheckbox
-                              slot="start"
-                              checked={checked}
-                              disabled={disabled}
-                              onIonChange={(e) =>
-                                toggleMascota(m.idMascota, !!e.detail.checked)
-                              }
-                            />
-                            <IonLabel>
-                              {m.nombre} — {m.raza ? ` ${m.raza}` : ""}
-                            </IonLabel>
-                          </IonItem>
-                        );
-                      })
+                      <IonList lines="none" style={{ paddingTop: "10px" }}>
+                        {mascotas.map((m) => {
+                          const isSelected = selMascotas.includes(m.idMascota);
+                          const isDisabled =
+                            !isSelected && selMascotas.length >= MAX_MASCOTAS;
+                          return (
+                            <IonItem
+                              key={m.idMascota}
+                              style={{
+                                "--background": isSelected
+                                  ? "#e0f7fa"
+                                  : "#f4f5f8",
+                                "--border-radius": "10px",
+                                marginBottom: "8px",
+                                border: isSelected
+                                  ? "1px solid var(--ion-color-primary)"
+                                  : "1px solid transparent",
+                              }}
+                            >
+                              <IonCheckbox
+                                slot="start"
+                                checked={isSelected}
+                                disabled={isDisabled}
+                                onIonChange={(e) =>
+                                  toggleMascota(m.idMascota, e.detail.checked)
+                                }
+                              />
+                              <IonLabel>
+                                <h3 style={{ fontWeight: 700 }}>{m.nombre}</h3>
+                                <p>{m.raza || "Sin raza"}</p>
+                              </IonLabel>
+                            </IonItem>
+                          );
+                        })}
+                      </IonList>
                     ) : (
-                      <IonItem>
-                        <IonNote color="medium">
-                          No tienes mascotas registradas. Registra una antes de
-                          publicar un paseo.
-                        </IonNote>
-                      </IonItem>
-                    )}
-
-                    <IonItem lines="none">
-                      <IonNote
-                        slot="end"
-                        style={{ width: "100%", textAlign: "right" }}
+                      <div
+                        className="ion-text-center ion-padding"
+                        style={{
+                          background: "#fff3e0",
+                          borderRadius: "10px",
+                          marginTop: "10px",
+                        }}
                       >
-                        Puedes seleccionar hasta {MAX_MASCOTAS} por paseo. (
-                        {selMascotas.length}/{MAX_MASCOTAS})
-                      </IonNote>
-                    </IonItem>
+                        <p style={{ fontSize: "0.9rem", color: "#e65100" }}>
+                          No tienes mascotas registradas.
+                        </p>
+                        <IonButton
+                          fill="clear"
+                          size="small"
+                          onClick={() => router.push("/registro-mascota")}
+                        >
+                          Registrar ahora
+                        </IonButton>
+                      </div>
+                    )}
+                  </div>
 
-                    <IonItem>
-                      <IonLabel position="stacked" color="prussian-blue">
-                        Fecha y hora
-                      </IonLabel>
+                  {/* SECCIÓN FECHA Y HORA */}
+                  <div className="ion-margin-bottom ion-margin-top">
+                    <IonLabel
+                      style={{
+                        fontWeight: 700,
+                        color: "var(--ion-color-prussian-blue)",
+                        marginLeft: "5px",
+                      }}
+                    >
+                      <IonIcon
+                        icon={calendarOutline}
+                        style={{ verticalAlign: "middle", marginRight: "5px" }}
+                      />
+                      Fecha y Hora
+                    </IonLabel>
+                    <div
+                      style={{
+                        marginTop: "10px",
+                        padding: "10px",
+                        border: "1px solid #e0e0e0",
+                        borderRadius: "10px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
                       <IonDatetimeButton datetime="datetime-nuevo" />
-                      <IonModal keepContentsMounted>
-                        <IonDatetime
-                          id="datetime-nuevo"
-                          presentation="date-time"
-                          minuteValues="0,5,10,15,20,25,30,35,40,45,50,55"
-                          onIonChange={(e) =>
-                            setFechaISO(String(e.detail.value || ""))
-                          }
-                        />
-                      </IonModal>
-                    </IonItem>
+                      <IonText color="medium" style={{ fontSize: "0.85rem" }}>
+                        Selecciona día y horario
+                      </IonText>
+                    </div>
+                    <IonModal keepContentsMounted>
+                      <IonDatetime
+                        id="datetime-nuevo"
+                        presentation="date-time"
+                        minuteValues="0,5,10,15,20,25,30,35,40,45,50,55"
+                        onIonChange={(e) =>
+                          setFechaISO(String(e.detail.value || ""))
+                        }
+                      />
+                    </IonModal>
+                  </div>
 
-                    <IonRadioGroup
-                      value={duracionMin}
+                  {/* SECCIÓN DURACIÓN (Grid Visual) */}
+                  <div className="ion-margin-bottom ion-margin-top">
+                    <IonLabel
+                      style={{
+                        fontWeight: 700,
+                        color: "var(--ion-color-prussian-blue)",
+                        marginLeft: "5px",
+                      }}
+                    >
+                      <IonIcon
+                        icon={walkOutline}
+                        style={{ verticalAlign: "middle", marginRight: "5px" }}
+                      />
+                      Duración del paseo
+                    </IonLabel>
+                    <IonGrid
+                      className="ion-no-padding"
+                      style={{ marginTop: "10px" }}
+                    >
+                      <IonRow>
+                        {duracionOptions.map((opt) => (
+                          <IonCol size="6" key={opt.val}>
+                            <div
+                              onClick={() => setDuracionMin(opt.val)}
+                              style={{
+                                border:
+                                  duracionMin === opt.val
+                                    ? "2px solid var(--ion-color-success)"
+                                    : "1px solid #e0e0e0",
+                                background:
+                                  duracionMin === opt.val ? "#f1f8e9" : "white",
+                                borderRadius: "10px",
+                                padding: "10px",
+                                textAlign: "center",
+                                cursor: "pointer",
+                                margin: "4px",
+                                transition: "all 0.2s",
+                              }}
+                            >
+                              <IonText color="dark">
+                                <h4 style={{ fontWeight: 700, margin: 0 }}>
+                                  {opt.label}
+                                </h4>
+                              </IonText>
+                              <IonText color="success">
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontSize: "0.9rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {opt.price}
+                                </p>
+                              </IonText>
+                            </div>
+                          </IonCol>
+                        ))}
+                      </IonRow>
+                    </IonGrid>
+                  </div>
+
+                  {/* SECCIÓN DETALLES (Inputs) */}
+                  <IonItem lines="none" className="ion-margin-bottom">
+                    <IonIcon
+                      slot="start"
+                      icon={locationOutline}
+                      color="medium"
+                    />
+                    <IonInput
+                      label="Ubicación"
+                      labelPlacement="floating"
+                      fill="outline"
+                      placeholder="Av. Principal 123"
+                      value={lugar}
+                      onIonChange={(e) => setLugar(e.detail.value || "")}
+                      counter={true}
+                      maxlength={100}
+                    />
+                  </IonItem>
+
+                  <IonItem lines="none" className="ion-margin-bottom">
+                    <IonIcon slot="start" icon={cashOutline} color="medium" />
+                    <IonSelect
+                      label="Método de Pago"
+                      labelPlacement="floating"
+                      fill="outline"
+                      placeholder="Seleccionar"
+                      value={metodoPago}
                       onIonChange={(e) =>
-                        setDuracionMin(String(e.detail.value))
+                        setMetodoPago(String(e.detail.value || ""))
                       }
                     >
-                      <IonListHeader>
-                        <IonLabel color="prussian-blue">Duración</IonLabel>
-                      </IonListHeader>
+                      <IonSelectOption value="efectivo">
+                        Efectivo
+                      </IonSelectOption>
+                      <IonSelectOption value="transferencia">
+                        Transferencia
+                      </IonSelectOption>
+                    </IonSelect>
+                  </IonItem>
 
-                      <IonItem>
-                        <IonRadio slot="start" value="30" />
-                        <IonLabel>30 minutos</IonLabel>
-                        <IonChip slot="end" color="success">
-                          $10.000 CLP
-                        </IonChip>
-                      </IonItem>
-                      <IonItem>
-                        <IonRadio slot="start" value="60" />
-                        <IonLabel>1 hora</IonLabel>
-                        <IonChip slot="end" color="success">
-                          $15.000 CLP
-                        </IonChip>
-                      </IonItem>
-                      <IonItem>
-                        <IonRadio slot="start" value="90" />
-                        <IonLabel>1 hora y 30 minutos</IonLabel>
-                        <IonChip slot="end" color="success">
-                          $20.000 CLP
-                        </IonChip>
-                      </IonItem>
-                      <IonItem>
-                        <IonRadio slot="start" value="120" />
-                        <IonLabel>2 horas</IonLabel>
-                        <IonChip slot="end" color="success">
-                          $25.000 CLP
-                        </IonChip>
-                      </IonItem>
-                    </IonRadioGroup>
+                  <IonItem lines="none" className="ion-margin-bottom">
+                    <IonIcon slot="start" icon={createOutline} color="medium" />
+                    <IonTextarea
+                      label="Notas (Opcional)"
+                      labelPlacement="floating"
+                      fill="outline"
+                      placeholder="Ej: Tocar timbre fuerte..."
+                      value={notas}
+                      onIonChange={(e) => setNotas(e.detail.value || "")}
+                      counter={true}
+                      maxlength={120}
+                      rows={2}
+                    />
+                  </IonItem>
 
-                    <IonItem>
-                      <IonLabel position="stacked" color="prussian-blue">
-                        Ubicación
-                      </IonLabel>
-                      <IonInput
-                        required
-                        minlength={10}
-                        maxlength={100}
-                        counter={true}
-                        placeholder="Av. Punk Hazard 123, Colina"
-                        value={lugar}
-                        onIonChange={(e) => setLugar(e.detail.value || "")}
+                  {err && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginBottom: "15px",
+                        color: "var(--ion-color-danger)",
+                      }}
+                    >
+                      <IonIcon
+                        icon={alertCircleOutline}
+                        style={{ marginRight: "5px" }}
                       />
-                    </IonItem>
-
-                    <IonItem>
-                      <IonLabel position="stacked" color="prussian-blue">
-                        Método de pago
-                      </IonLabel>
-                      <IonSelect
-                        placeholder="Selecciona un método"
-                        value={metodoPago}
-                        onIonChange={(e) =>
-                          setMetodoPago(String(e.detail.value || ""))
-                        }
-                      >
-                        <IonSelectOption value="efectivo">
-                          Efectivo
-                        </IonSelectOption>
-                        <IonSelectOption value="transferencia">
-                          Transferencia
-                        </IonSelectOption>
-                      </IonSelect>
-                    </IonItem>
-
-                    <IonItem>
-                      <IonLabel position="stacked" color="prussian-blue">
-                        Notas (opcional)
-                      </IonLabel>
-                      <IonInput
-                        placeholder="Ej: Tocar timbre 2 veces."
-                        value={notas}
-                        onIonChange={(e) => setNotas(e.detail.value || "")}
-                        maxlength={120}
-                        counter={true}
-                      />
-                    </IonItem>
-                  </IonList>
+                      <IonText>
+                        <p style={{ margin: 0 }}>{err}</p>
+                      </IonText>
+                    </div>
+                  )}
 
                   <IonButton
                     type="submit"
-                    color="prussian-blue"
                     expand="block"
+                    shape="round"
+                    color="prussian-blue"
                     className="ion-margin-top"
                     disabled={submitting || !mascotas.length}
+                    style={{ height: "50px", fontWeight: 700 }}
                   >
-                    {submitting ? <IonSpinner name="dots" /> : "Publicar paseo"}
+                    {submitting ? (
+                      <IonSpinner name="dots" />
+                    ) : (
+                      <>
+                        <IonIcon slot="start" icon={addCircleOutline} />
+                        Publicar Paseo
+                      </>
+                    )}
                   </IonButton>
                 </form>
-
-                {err && (
-                  <IonText color="danger">
-                    <p className="ion-text-center ion-margin-top">{err}</p>
-                  </IonText>
-                )}
-              </>
-            )}
-          </IonCardContent>
-        </IonCard>
+              )}
+            </IonCardContent>
+          </IonCard>
+        </div>
 
         <IonAlert
           isOpen={alert.open}
