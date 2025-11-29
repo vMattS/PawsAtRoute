@@ -8,6 +8,16 @@ const GMAIL_REDIRECT_URI  = (process.env.GMAIL_REDIRECT_URI ?? "https://develope
 const GMAIL_REFRESH_TOKEN = (process.env.GMAIL_REFRESH_TOKEN ?? "").trim();
 export const FROM_EMAIL   = (process.env.FROM_EMAIL ?? "soporte.pawsatroute@gmail.com").trim();
 
+// =========================
+// 🔥 DEBUG: validar credenciales en runtime
+// =========================
+console.log("📩 Gmail Auth DEBUG (in backend runtime)");
+console.log("   CLIENT_ID            =", GMAIL_CLIENT_ID ? "[OK]" : "❗ MISSING");
+console.log("   CLIENT_SECRET LEN    =", GMAIL_CLIENT_SECRET?.length ?? 0);
+console.log("   REDIRECT_URI         =", GMAIL_REDIRECT_URI);
+console.log("   REFRESH_TOKEN LEN    =", GMAIL_REFRESH_TOKEN?.length ?? 0);
+console.log("   FROM_EMAIL           =", FROM_EMAIL);
+
 /** OAuth2 client configurado para Gmail API */
 export function makeOAuth2Client() {
   const oAuth2Client = new google.auth.OAuth2(
@@ -70,6 +80,12 @@ export async function gmailSendText({
   text: string;
   replyTo?: string;
 }) {
+
+  console.log("📨 Intentando enviar email vía gmailSendText...");
+  console.log("   TO:", to);
+  console.log("   SUBJECT:", subject);
+  console.log("   USING REFRESH TOKEN LEN:", GMAIL_REFRESH_TOKEN.length);
+
   const auth = makeOAuth2Client();
   const gmail = google.gmail({ version: "v1", auth });
 
@@ -86,14 +102,16 @@ export async function gmailSendText({
     requestBody: { raw },
   });
 
+  console.log("📨 Gmail response:", res.data);
+
   return res.data; // incluye id, threadId, labelIds
 }
+
 export async function sendEmail(opts: {
   to: string;
   subject: string;
   text: string;
   html?: string; // ignorado en texto, ver variante HTML abajo
 }) {
-  // por ahora, Gmail texto:
   return gmailSendText({ to: opts.to, subject: opts.subject, text: opts.text });
 }
