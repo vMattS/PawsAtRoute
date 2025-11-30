@@ -1,4 +1,3 @@
-// src/pages/RegistroMascota.tsx
 import {
   IonAlert,
   IonBackButton,
@@ -18,12 +17,23 @@ import {
   IonSelectOption,
   IonTitle,
   IonToolbar,
-  IonText,
   IonSpinner,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonIcon,
+  IonText,
 } from "@ionic/react";
 import { useEffect, useMemo, useState } from "react";
 import { SelectChangeEventDetail } from "@ionic/core";
 import { useIonRouter } from "@ionic/react";
+import {
+  pawOutline,
+  textOutline,
+  hourglassOutline,
+  listOutline,
+  addCircleOutline,
+} from "ionicons/icons";
 import { Auth } from "../services/auth";
 import { createMascota } from "../services/api";
 
@@ -62,7 +72,6 @@ const razasData: Record<Especie, Raza[]> = {
 const RegistroMascota = () => {
   const router = useIonRouter();
 
-  // guard de sesión: solo DUEÑO
   useEffect(() => {
     const u = Auth.getUser();
     if (!u) {
@@ -75,7 +84,6 @@ const RegistroMascota = () => {
     }
   }, [router]);
 
-  // estado del form
   const [nombre, setNombre] = useState("");
   const [selectedEspecie, setSelectedEspecie] = useState<Especie | "">("");
   const [selectedRaza, setSelectedRaza] = useState<string>("");
@@ -83,7 +91,11 @@ const RegistroMascota = () => {
 
   const [razasDisponibles, setRazasDisponibles] = useState<Raza[]>([]);
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{ open: boolean; header?: string; message?: string }>({
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    header?: string;
+    message?: string;
+  }>({
     open: false,
   });
 
@@ -95,21 +107,25 @@ const RegistroMascota = () => {
     setSelectedRaza("");
   };
 
-  // Mapea el select de edad a un número (años)
   const edadToNumber = (v: string): number => {
     switch (v) {
-      case "menor-1": return 0;     // o 1 si prefieres redondear
-      case "1-a-2":   return 2;
-      case "3-a-5":   return 4;
-      case "6-a-9":   return 7;
-      case "10-a-mas":return 10;
-      default:        return 0;
+      case "menor-1":
+        return 0;
+      case "1-a-2":
+        return 2;
+      case "3-a-5":
+        return 4;
+      case "6-a-9":
+        return 7;
+      case "10-a-mas":
+        return 10;
+      default:
+        return 0;
     }
   };
 
-  // Toma label de raza para guardar un valor legible (puedes usar value si prefieres)
   const razaLabel = useMemo(
-    () => razasDisponibles.find(r => r.value === selectedRaza)?.label ?? "",
+    () => razasDisponibles.find((r) => r.value === selectedRaza)?.label ?? "",
     [razasDisponibles, selectedRaza]
   );
 
@@ -127,28 +143,28 @@ const RegistroMascota = () => {
 
     setLoading(true);
     try {
-      // Tu API: createMascota({ nombre, especie, raza, edad })
-      // El backend asocia por token al dueño autenticado
       await createMascota({
         nombre: nombre.trim(),
-        especie: selectedEspecie,      // "canino" | "felino" (ajústalo si tu backend espera otra convención)
-        raza: razaLabel,               // o usa selectedRaza si prefieres códigos
-        edad: edadToNumber(edadSelect)
+        especie: selectedEspecie,
+        raza: razaLabel,
+        edad: edadToNumber(edadSelect),
       });
 
       setAlert({
         open: true,
-        header: "Mascota registrada",
-        message: "Se registró la mascota exitósamente.",
+        header: "¡Éxito!",
+        message: "Se registró la mascota exitosamente.",
       });
 
-      // navega después de un pequeño delay para que el usuario vea el mensaje
       setTimeout(() => router.push("/tabs/tab1", "root"), 600);
     } catch (err: any) {
       setAlert({
         open: true,
         header: "Error",
-        message: err?.response?.data?.error || err?.message || "No se pudo registrar la mascota",
+        message:
+          err?.response?.data?.error ||
+          err?.message ||
+          "No se pudo registrar la mascota",
       });
     } finally {
       setLoading(false);
@@ -157,7 +173,7 @@ const RegistroMascota = () => {
 
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar color="selective-yellow">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/tabs/tab1" color="prussian-blue" />
@@ -167,97 +183,230 @@ const RegistroMascota = () => {
           </IonTitle>
         </IonToolbar>
         <div style={{ overflow: "hidden" }}>
-          <svg preserveAspectRatio="none" viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg"
-               style={{ fill: "var(--ion-color-selective-yellow)", width: "125%", height: 35 }}>
-            <path d="M0 0v46.29c47.79 22.2 103.59 32.17 158 28 70.36-5.37 136.33-33.31 206.8-37.5 73.84-4.36 147.54 16.88 218.2 35.26 69.27 18 138.3 24.88 209.4 13.08 36.15-6 69.85-17.84 104.45-29.34C989.49 25 1113-14.29 1200 52.47V0z" opacity=".25"/>
-            <path d="M0 0v15.81c13 21.11 27.64 41.05 47.69 56.24C99.41 111.27 165 111 224.58 91.58c31.15-10.15 60.09-26.07 89.67-39.8 40.92-19 84.73-46 130.83-49.67 36.26-2.85 70.9 9.42 98.6 31.56 31.77 25.39 62.32 62 103.63 73 40.44 10.79 81.35-6.69 119.13-24.28s75.16-39 116.92-43.05c59.73-5.85 113.28 22.88 168.9 38.84 30.2 8.66 59 6.17 87.09-7.5 22.43-10.89 48-26.93 60.65-49.24V0z" opacity=".5"/>
-            <path d="M0 0v5.63C149.93 59 314.09 71.32 475.83 42.57c43-7.64 84.23-20.12 127.61-26.46 59-8.63 112.48 12.24 165.56 35.4C827.93 77.22 886 95.24 951.2 90c86.53-7 172.46-45.71 248.8-84.81V0z"/>
+          <svg
+            preserveAspectRatio="none"
+            viewBox="0 0 1200 120"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              fill: "var(--ion-color-selective-yellow)",
+              width: "125%",
+              height: 35,
+            }}
+          >
+            <path
+              d="M0 0v46.29c47.79 22.2 103.59 32.17 158 28 70.36-5.37 136.33-33.31 206.8-37.5 73.84-4.36 147.54 16.88 218.2 35.26 69.27 18 138.3 24.88 209.4 13.08 36.15-6 69.85-17.84 104.45-29.34C989.49 25 1113-14.29 1200 52.47V0z"
+              opacity=".25"
+            />
+            <path
+              d="M0 0v15.81c13 21.11 27.64 41.05 47.69 56.24C99.41 111.27 165 111 224.58 91.58c31.15-10.15 60.09-26.07 89.67-39.8 40.92-19 84.73-46 130.83-49.67 36.26-2.85 70.9 9.42 98.6 31.56 31.77 25.39 62.32 62 103.63 73 40.44 10.79 81.35-6.69 119.13-24.28s75.16-39 116.92-43.05c59.73-5.85 113.28 22.88 168.9 38.84 30.2 8.66 59 6.17 87.09-7.5 22.43-10.89 48-26.93 60.65-49.24V0z"
+              opacity=".5"
+            />
+            <path d="M0 0v5.63C149.93 59 314.09 71.32 475.83 42.57c43-7.64 84.23-20.12 127.61-26.46 59-8.63 112.48 12.24 165.56 35.4C827.93 77.22 886 95.24 951.2 90c86.53-7 172.46-45.71 248.8-84.81V0z" />
           </svg>
         </div>
       </IonHeader>
 
       <IonContent fullscreen className="ion-padding">
-        <IonCard>
-          <IonCardHeader className="ion-text-center">
-            <IonCardTitle color="prussian-blue">Registro de mascota</IonCardTitle>
-            <IonCardSubtitle>Información de la mascota</IonCardSubtitle>
-          </IonCardHeader>
+        <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+          <IonText className="ion-text-center">
+            <h1
+              style={{
+                color: "var(--ion-color-prussian-blue)",
+                fontWeight: 800,
+                marginTop: "10px",
+              }}
+            >
+              Nueva Mascota
+            </h1>
+            <p style={{ color: "#666", marginTop: "-5px" }}>
+              Agrega un nuevo integrante a la familia
+            </p>
+          </IonText>
 
-          <IonCardContent>
-            <form onSubmit={onSubmit} noValidate>
-              <IonItem>
-                <IonInput
-                  label="Nombre"
-                  labelPlacement="stacked"
-                  placeholder="Ej. Firulais"
-                  required
-                  type="text"
-                  value={nombre}
-                  onIonChange={(e) => setNombre(e.detail.value ?? "")}
-                />
-              </IonItem>
-
-              <IonItem>
-                <IonSelect
-                  label="Especie"
-                  labelPlacement="stacked"
-                  placeholder="Seleccione una especie"
-                  required
-                  value={selectedEspecie}
-                  onIonChange={handleEspecieChange}
-                >
-                  <IonSelectOption value="canino">Canino</IonSelectOption>
-                  <IonSelectOption value="felino">Felino</IonSelectOption>
-                </IonSelect>
-              </IonItem>
-
-              <IonItem>
-                <IonSelect
-                  label="Raza"
-                  labelPlacement="stacked"
-                  placeholder="Seleccione una raza"
-                  required
-                  disabled={!selectedEspecie}
-                  value={selectedRaza}
-                  onIonChange={(e) => setSelectedRaza(e.detail.value)}
-                >
-                  {razasDisponibles.map((raza) => (
-                    <IonSelectOption key={raza.value} value={raza.value}>
-                      {raza.label}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-
-              <IonItem>
-                <IonSelect
-                  label="Edad"
-                  labelPlacement="stacked"
-                  placeholder="Seleccione la edad"
-                  required
-                  value={edadSelect}
-                  onIonChange={(e) => setEdadSelect(e.detail.value)}
-                >
-                  <IonSelectOption value="menor-1">Menor de 1 año</IonSelectOption>
-                  <IonSelectOption value="1-a-2">1 a 2 años</IonSelectOption>
-                  <IonSelectOption value="3-a-5">3 a 5 años</IonSelectOption>
-                  <IonSelectOption value="6-a-9">6 a 9 años</IonSelectOption>
-                  <IonSelectOption value="10-a-mas">10 años o más</IonSelectOption>
-                </IonSelect>
-              </IonItem>
-
-              <IonButton
-                color="prussian-blue"
-                expand="block"
-                className="ion-margin-top"
-                type="submit"
-                disabled={loading}
+          <IonCard
+            style={{
+              borderRadius: "20px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              marginTop: "20px",
+            }}
+          >
+            <IonCardHeader className="ion-text-center">
+              <div
+                style={{
+                  background: "#f4f5f8",
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 10px auto",
+                }}
               >
-                {loading ? <IonSpinner name="dots" /> : "Registrar"}
-              </IonButton>
-            </form>
-          </IonCardContent>
-        </IonCard>
+                <IonIcon
+                  icon={pawOutline}
+                  style={{
+                    fontSize: "30px",
+                    color: "var(--ion-color-prussian-blue)",
+                  }}
+                />
+              </div>
+              <IonCardTitle
+                color="prussian-blue"
+                style={{ fontSize: "1.2rem", fontWeight: 700 }}
+              >
+                Datos de la Mascota
+              </IonCardTitle>
+              <IonCardSubtitle>Completa la información básica</IonCardSubtitle>
+            </IonCardHeader>
+
+            <IonCardContent>
+              <form onSubmit={onSubmit} noValidate>
+                <IonGrid className="ion-no-padding">
+                  {/* Nombre - Fila completa */}
+                  <IonRow>
+                    <IonCol size="12">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonIcon
+                          slot="start"
+                          icon={textOutline}
+                          color="medium"
+                        />
+                        <IonInput
+                          label="Nombre"
+                          labelPlacement="floating"
+                          placeholder="Ej. Firulais"
+                          fill="outline"
+                          required
+                          value={nombre}
+                          onIonChange={(e) => setNombre(e.detail.value ?? "")}
+                        />
+                      </IonItem>
+                    </IonCol>
+                  </IonRow>
+
+                  {/* Especie y Edad - Fila compartida */}
+                  <IonRow>
+                    <IonCol size="6">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonIcon
+                          slot="start"
+                          icon={pawOutline}
+                          color="medium"
+                        />
+                        <IonSelect
+                          label="Especie"
+                          labelPlacement="floating"
+                          fill="outline"
+                          placeholder="Seleccionar"
+                          required
+                          value={selectedEspecie}
+                          onIonChange={handleEspecieChange}
+                        >
+                          <IonSelectOption value="canino">
+                            Canino
+                          </IonSelectOption>
+                          <IonSelectOption value="felino">
+                            Felino
+                          </IonSelectOption>
+                        </IonSelect>
+                      </IonItem>
+                    </IonCol>
+                    <IonCol size="6">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonIcon
+                          slot="start"
+                          icon={hourglassOutline}
+                          color="medium"
+                        />
+                        <IonSelect
+                          label="Edad"
+                          labelPlacement="floating"
+                          fill="outline"
+                          placeholder="Seleccionar"
+                          required
+                          value={edadSelect}
+                          onIonChange={(e) => setEdadSelect(e.detail.value)}
+                        >
+                          <IonSelectOption value="menor-1">
+                            Menor de 1 año
+                          </IonSelectOption>
+                          <IonSelectOption value="1-a-2">
+                            1 a 2 años
+                          </IonSelectOption>
+                          <IonSelectOption value="3-a-5">
+                            3 a 5 años
+                          </IonSelectOption>
+                          <IonSelectOption value="6-a-9">
+                            6 a 9 años
+                          </IonSelectOption>
+                          <IonSelectOption value="10-a-mas">
+                            10 años o más
+                          </IonSelectOption>
+                        </IonSelect>
+                      </IonItem>
+                    </IonCol>
+                  </IonRow>
+
+                  {/* Raza - Fila completa */}
+                  <IonRow>
+                    <IonCol size="12">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonIcon
+                          slot="start"
+                          icon={listOutline}
+                          color="medium"
+                        />
+                        <IonSelect
+                          label="Raza"
+                          labelPlacement="floating"
+                          fill="outline"
+                          placeholder={
+                            selectedEspecie
+                              ? "Seleccione una raza"
+                              : "Primero seleccione especie"
+                          }
+                          required
+                          disabled={!selectedEspecie}
+                          value={selectedRaza}
+                          onIonChange={(e) => setSelectedRaza(e.detail.value)}
+                        >
+                          {razasDisponibles.map((raza) => (
+                            <IonSelectOption
+                              key={raza.value}
+                              value={raza.value}
+                            >
+                              {raza.label}
+                            </IonSelectOption>
+                          ))}
+                        </IonSelect>
+                      </IonItem>
+                    </IonCol>
+                  </IonRow>
+
+                  <IonButton
+                    color="prussian-blue"
+                    expand="block"
+                    shape="round"
+                    className="ion-margin-top"
+                    type="submit"
+                    disabled={loading}
+                    style={{ height: "50px", fontWeight: 600 }}
+                  >
+                    {loading ? (
+                      <IonSpinner name="dots" />
+                    ) : (
+                      <>
+                        <IonIcon slot="start" icon={addCircleOutline} />
+                        Registrar Mascota
+                      </>
+                    )}
+                  </IonButton>
+                </IonGrid>
+              </form>
+            </IonCardContent>
+          </IonCard>
+        </div>
 
         <IonAlert
           isOpen={alert.open}

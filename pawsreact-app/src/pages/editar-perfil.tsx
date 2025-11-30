@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   IonPage,
   IonHeader,
@@ -14,24 +15,36 @@ import {
   IonInput,
   IonButton,
   IonAlert,
-  IonBackButton,
   IonButtons,
   IonSelect,
   IonSelectOption,
+  IonIcon,
+  IonGrid,
+  IonRow,
+  IonCol,
 } from "@ionic/react";
 import { useIonRouter } from "@ionic/react";
+import {
+  personOutline,
+  callOutline,
+  mapOutline,
+  cameraOutline,
+  saveOutline,
+  arrowBackOutline,
+} from "ionicons/icons";
 
 const EditarPerfil: React.FC = () => {
   const router = useIonRouter();
+  const [showAlert, setShowAlert] = useState(false);
+
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar color="selective-yellow">
           <IonButtons slot="start">
-            <IonBackButton
-              defaultHref="/tabs/tab3"
-              color="prussian-blue"
-            ></IonBackButton>
+            <IonButton onClick={() => router.goBack()} color="prussian-blue">
+              <IonIcon icon={arrowBackOutline} />
+            </IonButton>
           </IonButtons>
           <IonTitle className="coffeecake" color="prussian-blue">
             Paws At Route
@@ -60,170 +73,251 @@ const EditarPerfil: React.FC = () => {
           </svg>
         </div>
       </IonHeader>
+
       <IonContent className="ion-padding" fullscreen>
-        <IonCard>
-          <IonCardHeader className="ion-text-center">
-            <IonCardTitle color="prussian-blue">Editar perfil</IonCardTitle>
-            <IonCardSubtitle>Puedes modificar tu información</IonCardSubtitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <IonItem>
-              <IonAvatar slot="start">
+        <div
+          style={{ maxWidth: "600px", margin: "0 auto", paddingTop: "20px" }}
+        >
+          {/* AVATAR FUERA DE LA TARJETA (Sibling Layout) */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              position: "relative",
+              zIndex: 10 /* Asegura que esté por encima de la tarjeta */,
+              marginBottom:
+                "-60px" /* Truco: Margen negativo para que la tarjeta suba */,
+            }}
+          >
+            <div style={{ position: "relative" }}>
+              <IonAvatar
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  border: "4px solid white",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  background: "#f4f5f8",
+                  overflow: "hidden",
+                }}
+              >
                 <img
-                  style={{ border: "2px solid var(--ion-color-ut-orange)" }}
                   alt="Avatar"
                   src="https://ionicframework.com/docs/img/demos/avatar.svg"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               </IonAvatar>
-              <input type="file" accept="image/*" name="avatar" id="avatar" />
-            </IonItem>
-            <IonItem>
-              <IonInput
-                label="Nombre"
-                labelPlacement="stacked"
-                placeholder="Ej. Benjamín"
-                minlength={2}
-                maxlength={20}
-                type="text"
-                id="nombre"
-              ></IonInput>
-            </IonItem>
-            <IonItem>
-              <IonInput
-                label="Apellido"
-                labelPlacement="stacked"
-                placeholder="Ej. Pérez"
-                minlength={2}
-                maxlength={20}
-                type="text"
-                id="apellido"
-              ></IonInput>
-            </IonItem>
-            <IonItem>
-              <IonInput
-                label="Teléfono"
-                labelPlacement="stacked"
-                placeholder="Ej. 987654321"
-                type="tel"
-                minlength={9}
-                maxlength={9}
-                id="telefono"
-              ></IonInput>
-            </IonItem>
-            {/* Comuna */}
-            <IonItem>
-              <IonSelect
-                label="Comuna"
-                placeholder="Selecciona tu comuna de residencia"
-                labelPlacement="stacked"
-                required
-              >
-                <IonSelectOption value="Alhué">Alhué</IonSelectOption>
-                <IonSelectOption value="Buin">Buin</IonSelectOption>
-                <IonSelectOption value="Calera de Tango">
-                  Calera de Tango
-                </IonSelectOption>
-                <IonSelectOption value="Cerrillos">Cerrillos</IonSelectOption>
-                <IonSelectOption value="Cerro Navia">
-                  Cerro Navia
-                </IonSelectOption>
-                <IonSelectOption value="Colina">Colina</IonSelectOption>
-                <IonSelectOption value="Conchalí">Conchalí</IonSelectOption>
-                <IonSelectOption value="Curacaví">Curacaví</IonSelectOption>
-                <IonSelectOption value="El Bosque">El Bosque</IonSelectOption>
-                <IonSelectOption value="El Monte">El Monte</IonSelectOption>
-                <IonSelectOption value="Estación Central">
-                  Estación Central
-                </IonSelectOption>
-                <IonSelectOption value="Huechuraba">Huechuraba</IonSelectOption>
-                <IonSelectOption value="Independencia">
-                  Independencia
-                </IonSelectOption>
-                <IonSelectOption value="Isla de Maipo">
-                  Isla de Maipo
-                </IonSelectOption>
-                <IonSelectOption value="La Cisterna">
-                  La Cisterna
-                </IonSelectOption>
-                <IonSelectOption value="La Florida">La Florida</IonSelectOption>
-                <IonSelectOption value="La Granja">La Granja</IonSelectOption>
-                <IonSelectOption value="La Pintana">La Pintana</IonSelectOption>
-                <IonSelectOption value="La Reina">La Reina</IonSelectOption>
-                <IonSelectOption value="Lampa">Lampa</IonSelectOption>
-                <IonSelectOption value="Las Condes">Las Condes</IonSelectOption>
-                <IonSelectOption value="Lo Barnechea">
-                  Lo Barnechea
-                </IonSelectOption>
-                <IonSelectOption value="Lo Espejo">Lo Espejo</IonSelectOption>
-                <IonSelectOption value="Lo Prado">Lo Prado</IonSelectOption>
-                <IonSelectOption value="Macul">Macul</IonSelectOption>
-                <IonSelectOption value="Maipú">Maipú</IonSelectOption>
-                <IonSelectOption value="María Pinto">
-                  María Pinto
-                </IonSelectOption>
-                <IonSelectOption value="Melipilla">Melipilla</IonSelectOption>
-                <IonSelectOption value="Ñuñoa">Ñuñoa</IonSelectOption>
-                <IonSelectOption value="Padre Hurtado">
-                  Padre Hurtado
-                </IonSelectOption>
-                <IonSelectOption value="Paine">Paine</IonSelectOption>
-                <IonSelectOption value="Pedro Aguirre Cerda">
-                  Pedro Aguirre Cerda
-                </IonSelectOption>
-                <IonSelectOption value="Peñaflor">Peñaflor</IonSelectOption>
-                <IonSelectOption value="Peñalolén">Peñalolén</IonSelectOption>
-                <IonSelectOption value="Pirque">Pirque</IonSelectOption>
-                <IonSelectOption value="Providencia">
-                  Providencia
-                </IonSelectOption>
-                <IonSelectOption value="Pudahuel">Pudahuel</IonSelectOption>
-                <IonSelectOption value="Puente Alto">
-                  Puente Alto
-                </IonSelectOption>
-                <IonSelectOption value="Quilicura">Quilicura</IonSelectOption>
-                <IonSelectOption value="Quinta Normal">
-                  Quinta Normal
-                </IonSelectOption>
-                <IonSelectOption value="Recoleta">Recoleta</IonSelectOption>
-                <IonSelectOption value="Renca">Renca</IonSelectOption>
-                <IonSelectOption value="San Bernardo">
-                  San Bernardo
-                </IonSelectOption>
-                <IonSelectOption value="San Joaquín">
-                  San Joaquín
-                </IonSelectOption>
-                <IonSelectOption value="San José de Maipo">
-                  San José de Maipo
-                </IonSelectOption>
-                <IonSelectOption value="San Miguel">San Miguel</IonSelectOption>
-                <IonSelectOption value="San Pedro">San Pedro</IonSelectOption>
-                <IonSelectOption value="San Ramón">San Ramón</IonSelectOption>
-                <IonSelectOption value="Santiago">Santiago</IonSelectOption>
-                <IonSelectOption value="Talagante">Talagante</IonSelectOption>
-                <IonSelectOption value="Tiltil">Tiltil</IonSelectOption>
-                <IonSelectOption value="Vitacura">Vitacura</IonSelectOption>
-              </IonSelect>
-            </IonItem>
 
-            <IonButton
-              className="ion-margin-top"
-              expand="block"
-              fill="solid"
-              color="prussian-blue"
-              type="submit"
-              id="confirmar-alert"
+              {/* Botón de cámara */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "5px",
+                  right: "5px",
+                  zIndex: 20,
+                }}
+              >
+                <label htmlFor="avatar-upload">
+                  <div
+                    style={{
+                      background: "var(--ion-color-prussian-blue)",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      cursor: "pointer",
+                      border: "2px solid white",
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <IonIcon icon={cameraOutline} size="small" />
+                  </div>
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="avatar-upload"
+                  style={{ display: "none" }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <IonCard
+            style={{
+              borderRadius: "20px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              paddingTop:
+                "60px" /* Relleno superior para compensar el avatar superpuesto */,
+              marginTop: "0",
+              overflow: "visible",
+            }}
+          >
+            <IonCardHeader
+              className="ion-text-center"
+              style={{ paddingBottom: "0" }}
             >
-              Guardar cambios
-            </IonButton>
-            <IonAlert
-              trigger="confirmar-alert"
-              header="Perfil actualizado"
-              subHeader="Se actualizó el perfil exitósamente."
-              buttons={["Aceptar"]}
-              onClick={() => router.push("/tabs/tab3")}
-            ></IonAlert>
-          </IonCardContent>
-        </IonCard>
+              <IonCardTitle color="prussian-blue" style={{ fontWeight: 800 }}>
+                Editar Perfil
+              </IonCardTitle>
+              <IonCardSubtitle>
+                Actualiza tu información personal
+              </IonCardSubtitle>
+            </IonCardHeader>
+
+            <IonCardContent>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setShowAlert(true);
+                }}
+              >
+                <IonGrid className="ion-no-padding">
+                  <IonRow>
+                    <IonCol size="6">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonIcon
+                          slot="start"
+                          icon={personOutline}
+                          color="medium"
+                        />
+                        <IonInput
+                          label="Nombre"
+                          labelPlacement="floating"
+                          fill="outline"
+                          placeholder="Ej. Benjamín"
+                          minlength={2}
+                          maxlength={20}
+                          type="text"
+                        />
+                      </IonItem>
+                    </IonCol>
+                    <IonCol size="6">
+                      <IonItem lines="none" className="ion-margin-bottom">
+                        <IonInput
+                          label="Apellido"
+                          labelPlacement="floating"
+                          fill="outline"
+                          placeholder="Ej. Pérez"
+                          minlength={2}
+                          maxlength={20}
+                          type="text"
+                        />
+                      </IonItem>
+                    </IonCol>
+                  </IonRow>
+
+                  <IonItem lines="none" className="ion-margin-bottom">
+                    <IonIcon slot="start" icon={callOutline} color="medium" />
+                    <IonInput
+                      label="Teléfono"
+                      labelPlacement="floating"
+                      fill="outline"
+                      placeholder="Ej. 987654321"
+                      type="tel"
+                      minlength={9}
+                      maxlength={9}
+                    />
+                  </IonItem>
+
+                  <IonItem lines="none" className="ion-margin-bottom">
+                    <IonIcon slot="start" icon={mapOutline} color="medium" />
+                    <IonSelect
+                      label="Comuna"
+                      labelPlacement="floating"
+                      fill="outline"
+                      placeholder="Selecciona comuna"
+                    >
+                      {[
+                        "Alhué",
+                        "Buin",
+                        "Calera de Tango",
+                        "Cerrillos",
+                        "Cerro Navia",
+                        "Colina",
+                        "Conchalí",
+                        "Curacaví",
+                        "El Bosque",
+                        "El Monte",
+                        "Estación Central",
+                        "Huechuraba",
+                        "Independencia",
+                        "Isla de Maipo",
+                        "La Cisterna",
+                        "La Florida",
+                        "La Granja",
+                        "La Pintana",
+                        "La Reina",
+                        "Lampa",
+                        "Las Condes",
+                        "Lo Barnechea",
+                        "Lo Espejo",
+                        "Lo Prado",
+                        "Macul",
+                        "Maipú",
+                        "María Pinto",
+                        "Melipilla",
+                        "Ñuñoa",
+                        "Padre Hurtado",
+                        "Paine",
+                        "Pedro Aguirre Cerda",
+                        "Peñaflor",
+                        "Peñalolén",
+                        "Pirque",
+                        "Providencia",
+                        "Pudahuel",
+                        "Puente Alto",
+                        "Quilicura",
+                        "Quinta Normal",
+                        "Recoleta",
+                        "Renca",
+                        "San Bernardo",
+                        "San Joaquín",
+                        "San José de Maipo",
+                        "San Miguel",
+                        "San Pedro",
+                        "San Ramón",
+                        "Santiago",
+                        "Talagante",
+                        "Tiltil",
+                        "Vitacura",
+                      ].map((c) => (
+                        <IonSelectOption key={c} value={c}>
+                          {c}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  </IonItem>
+
+                  <IonButton
+                    expand="block"
+                    shape="round"
+                    color="prussian-blue"
+                    type="submit"
+                    className="ion-margin-top"
+                    style={{ height: "50px", fontWeight: 600 }}
+                  >
+                    <IonIcon slot="start" icon={saveOutline} />
+                    Guardar Cambios
+                  </IonButton>
+                </IonGrid>
+              </form>
+            </IonCardContent>
+          </IonCard>
+        </div>
+
+        <IonAlert
+          isOpen={showAlert}
+          header="Perfil actualizado"
+          subHeader="Se actualizó el perfil exitosamente."
+          buttons={["Aceptar"]}
+          onDidDismiss={() => {
+            setShowAlert(false);
+            router.push("/tabs/tab3");
+          }}
+        />
       </IonContent>
     </IonPage>
   );

@@ -6,18 +6,33 @@ import {
   IonContent,
   IonText,
   IonCard,
-  IonCardHeader,
-  IonCardTitle,
   IonCardContent,
   IonAccordionGroup,
   IonAccordion,
   IonItem,
   IonLabel,
-  IonBadge,
-  IonSpinner,
+  IonRefresher,
+  IonRefresherContent,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonIcon,
+  IonChip,
+  IonSkeletonText,
 } from "@ionic/react";
 import { useEffect, useMemo, useState } from "react";
 import { useIonRouter } from "@ionic/react";
+import {
+  cashOutline,
+  trophyOutline,
+  calendarOutline,
+  timeOutline,
+  locationOutline,
+  hourglassOutline,
+  walletOutline,
+  paw,
+  refreshOutline,
+} from "ionicons/icons";
 import { Auth } from "../services/auth";
 import {
   listMisPaseosComoPaseador,
@@ -27,7 +42,12 @@ import {
 
 const fmtFecha = (iso: string) => {
   try {
-    return new Date(iso).toLocaleDateString();
+    const d = new Date(iso);
+    return d.toLocaleDateString("es-CL", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return iso;
   }
@@ -43,7 +63,6 @@ const fmtHora = (iso: string) => {
   }
 };
 
-// Mapa simple para saldo estimado según duración
 const tarifaPorMinuto = (min: number) => {
   switch (min) {
     case 30:
@@ -55,7 +74,7 @@ const tarifaPorMinuto = (min: number) => {
     case 120:
       return 25000;
     default:
-      return 0; // si otro valor, ajusta acá
+      return 0;
   }
 };
 
@@ -73,7 +92,26 @@ const EstadisticasPaseador: React.FC = () => {
   const [data, setData] = useState<Paginated<PaseoListItem> | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Guard + carga finalizados
+  const cargarDatos = async (event?: CustomEvent) => {
+    if (!event) setLoading(true);
+    try {
+      const u = Auth.getUser();
+      if (!u || u.rol !== "PASEADOR") return;
+
+      const res = await listMisPaseosComoPaseador({
+        estado: "FINALIZADO",
+        page: 1,
+        pageSize: 100,
+      });
+      setData(res);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+      if (event) (event.target as HTMLIonRefresherElement).complete();
+    }
+  };
+
   useEffect(() => {
     const u = Auth.getUser();
     if (!u) {
@@ -84,34 +122,62 @@ const EstadisticasPaseador: React.FC = () => {
       router.push("/tabs/tab1", "root");
       return;
     }
-
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await listMisPaseosComoPaseador({
-          estado: "FINALIZADO", // 🔹 solo historial
-          page: 1,
-          pageSize: 100,
-        });
-        setData(res);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    cargarDatos();
   }, [router]);
 
   const items = data?.items ?? [];
   const completados = items.length;
 
-  // Suma estimada según duración
   const saldo = useMemo(
     () => items.reduce((acc, p) => acc + tarifaPorMinuto(p.duracion), 0),
     [items]
   );
 
+  const renderSkeleton = () => (
+    <>
+      <IonGrid>
+        <IonRow>
+          <IonCol size="6">
+            <IonSkeletonText
+              animated
+              style={{ height: "120px", borderRadius: "16px" }}
+            />
+          </IonCol>
+          <IonCol size="6">
+            <IonSkeletonText
+              animated
+              style={{ height: "120px", borderRadius: "16px" }}
+            />
+          </IonCol>
+        </IonRow>
+      </IonGrid>
+      <IonSkeletonText
+        animated
+        style={{
+          height: "40px",
+          width: "60%",
+          marginTop: "20px",
+          marginBottom: "10px",
+        }}
+      />
+      {[1, 2, 3].map((i) => (
+        <IonSkeletonText
+          key={i}
+          animated
+          style={{
+            height: "60px",
+            width: "100%",
+            marginBottom: "10px",
+            borderRadius: "8px",
+          }}
+        />
+      ))}
+    </>
+  );
+
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar color="selective-yellow">
           <IonTitle className="coffeecake" color="prussian-blue">
             Paws At Route
@@ -142,115 +208,384 @@ const EstadisticasPaseador: React.FC = () => {
       </IonHeader>
 
       <IonContent className="ion-padding" fullscreen>
-        <IonText
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-          color="prussian-blue"
-        >
-          <h1 style={{ fontWeight: "bold", margin: 0 }}>Mis estadísticas</h1>
-          <IonBadge color="prussian-blue">Paseador</IonBadge>
-        </IonText>
-        <IonText>
-          <p>
-            Aquí puedes ver tus estadísticas como paseos completados e historial
-            de paseos.
-          </p>
-        </IonText>
+        <IonRefresher slot="fixed" onIonRefresh={cargarDatos}>
+          <IonRefresherContent pullingIcon={paw} refreshingSpinner="circles" />
+        </IonRefresher>
 
-        {/* Saldo estimado */}
-        <IonCard className="ion-text-center">
-          <IonCardHeader>
-            <IonCardTitle color="prussian-blue">Saldo (CLP)</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            {loading ? (
-              <IonSpinner name="dots" />
-            ) : (
-              <IonText>
-                <h1>${saldo.toLocaleString("es-CL")}</h1>
-              </IonText>
-            )}
-          </IonCardContent>
-        </IonCard>
+        <div className="ion-margin-bottom">
+          <IonText color="prussian-blue">
+            <h1 style={{ fontWeight: 800, margin: 0, fontSize: "2rem" }}>
+              Tu Rendimiento
+            </h1>
+            <p style={{ marginTop: "5px", color: "#666" }}>
+              Resumen de tu actividad reciente.
+            </p>
+          </IonText>
+        </div>
 
-        {/* Completados */}
-        <IonCard className="ion-text-center">
-          <IonCardHeader>
-            <IonCardTitle color="prussian-blue">
-              Paseos completados
-            </IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            {loading ? (
-              <IonSpinner name="dots" />
-            ) : (
-              <IonText>
-                <h1>{completados}</h1>
-              </IonText>
-            )}
-          </IonCardContent>
-        </IonCard>
+        {loading ? (
+          renderSkeleton()
+        ) : (
+          <>
+            <IonGrid className="ion-no-padding ion-margin-bottom">
+              <IonRow>
+                <IonCol size="6">
+                  <IonCard
+                    style={{
+                      margin: "0 8px 0 0",
+                      height: "100%",
+                      borderRadius: "20px",
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    <IonCardContent
+                      className="ion-text-center"
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        height: "100%",
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: "#e0f7fa",
+                          borderRadius: "50%",
+                          width: "50px",
+                          height: "50px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          margin: "0 auto 10px auto",
+                        }}
+                      >
+                        <IonIcon
+                          icon={walletOutline}
+                          style={{ fontSize: "24px", color: "#0097a7" }}
+                        />
+                      </div>
+                      <IonText
+                        color="medium"
+                        style={{ fontSize: "0.9rem", fontWeight: 600 }}
+                      >
+                        Ganancias
+                      </IonText>
+                      <IonText
+                        color="dark"
+                        style={{
+                          fontSize: "1.4rem",
+                          fontWeight: 800,
+                          marginTop: "5px",
+                        }}
+                      >
+                        ${saldo.toLocaleString("es-CL")}
+                      </IonText>
+                    </IonCardContent>
+                  </IonCard>
+                </IonCol>
+                <IonCol size="6">
+                  <IonCard
+                    style={{
+                      margin: "0 0 0 8px",
+                      height: "100%",
+                      borderRadius: "20px",
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    <IonCardContent
+                      className="ion-text-center"
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        height: "100%",
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: "#fff9c4",
+                          borderRadius: "50%",
+                          width: "50px",
+                          height: "50px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          margin: "0 auto 10px auto",
+                        }}
+                      >
+                        <IonIcon
+                          icon={trophyOutline}
+                          style={{ fontSize: "24px", color: "#fbc02d" }}
+                        />
+                      </div>
+                      <IonText
+                        color="medium"
+                        style={{ fontSize: "0.9rem", fontWeight: 600 }}
+                      >
+                        Paseos
+                      </IonText>
+                      <IonText
+                        color="dark"
+                        style={{
+                          fontSize: "1.4rem",
+                          fontWeight: 800,
+                          marginTop: "5px",
+                        }}
+                      >
+                        {completados}
+                      </IonText>
+                    </IonCardContent>
+                  </IonCard>
+                </IonCol>
+              </IonRow>
+            </IonGrid>
 
-        {/* Historial */}
-        <IonCard className="ion-text-center">
-          <IonCardHeader>
-            <IonCardTitle color="prussian-blue">Historial</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            {loading ? (
-              <div className="ion-text-center">
-                <IonSpinner name="dots" />
-              </div>
-            ) : completados === 0 ? (
-              <IonText>
-                <p>No tienes paseos finalizados todavía.</p>
+            <div className="ion-margin-top ion-padding-top">
+              <IonText color="prussian-blue">
+                <h2 style={{ fontWeight: 700, fontSize: "1.3rem" }}>
+                  Historial de Paseos
+                </h2>
               </IonText>
-            ) : (
-              <IonAccordionGroup>
-                {items.map((p) => (
-                  <IonAccordion key={p.idPaseo} value={`p-${p.idPaseo}`}>
-                    <IonItem slot="header" color="light">
-                      <IonLabel>
-                        {fmtFecha(p.fecha)} • {p.mascota?.nombre ?? "Mascota"}
-                      </IonLabel>
-                      <IonBadge color={badgeColor[p.estado] || "medium"}>
-                        {p.estado === "FINALIZADO" ? "Completado" : p.estado}
-                      </IonBadge>
-                    </IonItem>
-                    <div slot="content" className="ion-padding">
-                      <IonItem lines="none">
-                        <IonLabel>
-                          <b>Hora:</b> {fmtHora(p.hora)}
-                        </IonLabel>
+
+              {completados === 0 ? (
+                <div
+                  className="ion-text-center ion-padding"
+                  style={{ marginTop: "30px", opacity: 0.7 }}
+                >
+                  <div
+                    style={{
+                      background: "#f4f5f8",
+                      borderRadius: "50%",
+                      width: "80px",
+                      height: "80px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      margin: "0 auto 15px auto",
+                    }}
+                  >
+                    <IonIcon
+                      icon={calendarOutline}
+                      style={{ fontSize: "40px", color: "#999" }}
+                    />
+                  </div>
+                  <p>Aún no has completado ningún paseo.</p>
+                  <IonText color="primary" style={{ fontWeight: 600 }}>
+                    ¡Comienza a aceptar solicitudes!
+                  </IonText>
+                </div>
+              ) : (
+                <IonAccordionGroup style={{ marginTop: "10px" }}>
+                  {items.map((p) => (
+                    <IonAccordion
+                      key={p.idPaseo}
+                      value={`p-${p.idPaseo}`}
+                      style={{
+                        background: "white",
+                        marginBottom: "10px",
+                        borderRadius: "16px",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                      }}
+                    >
+                      <IonItem
+                        slot="header"
+                        lines="none"
+                        style={{ "--background": "transparent" }}
+                      >
+                        <div style={{ width: "100%" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            <IonText
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "1rem",
+                                color: "var(--ion-color-prussian-blue)",
+                              }}
+                            >
+                              {p.mascota?.nombre ?? "Mascota"}
+                            </IonText>
+                            <IonChip
+                              color={badgeColor[p.estado] || "medium"}
+                              style={{
+                                height: "20px",
+                                fontSize: "0.65rem",
+                                margin: 0,
+                              }}
+                            >
+                              {p.estado === "FINALIZADO"
+                                ? "COMPLETADO"
+                                : p.estado}
+                            </IonChip>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              fontSize: "0.85rem",
+                              color: "#888",
+                            }}
+                          >
+                            <IonIcon
+                              icon={calendarOutline}
+                              style={{ marginRight: "4px", fontSize: "0.9rem" }}
+                            />
+                            {fmtFecha(p.fecha)}
+                          </div>
+                        </div>
                       </IonItem>
-                      <IonItem lines="none">
-                        <IonLabel>
-                          <b>Duración:</b> {p.duracion} min
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem lines="none">
-                        <IonLabel>
-                          <b>Dirección:</b> {p.lugarEncuentro}
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem lines="none">
-                        <IonLabel>
-                          <b>Dueño:</b>{" "}
-                          {p.duenio
-                            ? `${p.duenio.nombre} ${p.duenio.apellido}`
-                            : "—"}
-                        </IonLabel>
-                      </IonItem>
-                    </div>
-                  </IonAccordion>
-                ))}
-              </IonAccordionGroup>
-            )}
-          </IonCardContent>
-        </IonCard>
+
+                      <div
+                        slot="content"
+                        style={{ padding: "0 16px 16px 16px" }}
+                      >
+                        <div
+                          style={{
+                            borderTop: "1px solid #f0f0f0",
+                            paddingTop: "12px",
+                          }}
+                        >
+                          <IonGrid className="ion-no-padding">
+                            <IonRow>
+                              <IonCol size="6">
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  <IonIcon
+                                    icon={timeOutline}
+                                    style={{
+                                      marginRight: "8px",
+                                      color:
+                                        "var(--ion-color-selective-yellow)",
+                                    }}
+                                  />
+                                  <IonText style={{ fontSize: "0.9rem" }}>
+                                    {fmtHora(p.hora)}
+                                  </IonText>
+                                </div>
+                              </IonCol>
+                              <IonCol size="6">
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  <IonIcon
+                                    icon={hourglassOutline}
+                                    style={{
+                                      marginRight: "8px",
+                                      color:
+                                        "var(--ion-color-selective-yellow)",
+                                    }}
+                                  />
+                                  <IonText style={{ fontSize: "0.9rem" }}>
+                                    {p.duracion} min
+                                  </IonText>
+                                </div>
+                              </IonCol>
+                              <IonCol size="6">
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <IonIcon
+                                    icon={cashOutline}
+                                    style={{
+                                      marginRight: "8px",
+                                      color: "var(--ion-color-success)",
+                                    }}
+                                  />
+                                  <IonText
+                                    style={{
+                                      fontSize: "0.9rem",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    $
+                                    {tarifaPorMinuto(p.duracion).toLocaleString(
+                                      "es-CL"
+                                    )}
+                                  </IonText>
+                                </div>
+                              </IonCol>
+                            </IonRow>
+                          </IonGrid>
+
+                          <div
+                            style={{
+                              marginTop: "12px",
+                              background: "#f9f9f9",
+                              padding: "10px",
+                              borderRadius: "8px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "start",
+                                marginBottom: "6px",
+                              }}
+                            >
+                              <IonIcon
+                                icon={locationOutline}
+                                style={{
+                                  minWidth: "16px",
+                                  marginTop: "3px",
+                                  marginRight: "6px",
+                                  color: "#666",
+                                }}
+                              />
+                              <IonText
+                                style={{ fontSize: "0.85rem", color: "#444" }}
+                              >
+                                {p.lugarEncuentro}
+                              </IonText>
+                            </div>
+                            <div
+                              style={{ display: "flex", alignItems: "center" }}
+                            >
+                              <IonIcon
+                                icon={paw}
+                                style={{
+                                  fontSize: "16px",
+                                  marginRight: "6px",
+                                  color: "#666",
+                                }}
+                              />
+                              <IonText
+                                style={{ fontSize: "0.85rem", color: "#444" }}
+                              >
+                                Dueño:{" "}
+                                <b>
+                                  {p.duenio
+                                    ? `${p.duenio.nombre} ${p.duenio.apellido}`
+                                    : "—"}
+                                </b>
+                              </IonText>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </IonAccordion>
+                  ))}
+                </IonAccordionGroup>
+              )}
+            </div>
+          </>
+        )}
       </IonContent>
     </IonPage>
   );
